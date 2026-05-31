@@ -1,1 +1,2 @@
-/* /index.html 200
+# Redirect www to apex
+https://www.accranightout.com/* https://accranightout.com/:splat 301
