@@ -1,0 +1,13 @@
+{
+  "name": "Accra Night Out",
+  "short_name": "AccraNightOut",
+  "description": "Find live bands, book tables and get gig alerts in Accra",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0D0D0D",
+  "theme_color": "#0D0D0D",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
