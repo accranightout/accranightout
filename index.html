@@ -2627,6 +2627,36 @@
   </div>
 </main>
 
+<!-- List Bar -->
+<div class="modal-overlay" id="barModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">List Your Bar / Venue</div>
+      <button class="modal-close" onclick="closeModal('barModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>BAR / VENUE NAME</label><input id="v-name" class="form-input" placeholder="e.g. Sky Bar Accra" /></div>
+      <div class="form-group"><label>AREA / NEIGHBOURHOOD</label><input id="v-area" class="form-input" placeholder="e.g. Osu, East Legon, Labadi..." /></div>
+      <div class="form-group"><label>FULL STREET ADDRESS</label><input id="v-address" class="form-input" placeholder="Street address" /></div>
+      <div class="form-group">
+        <label>GHANA POST GPS ADDRESS</label>
+        <div style="display:flex;gap:8px;">
+          <input id="v-gps" class="form-input" placeholder="e.g. GA-123-4567" style="flex:1;" />
+          <button class="btn-locate" onclick="lookupGhanaGPS()">Locate 📍</button>
+        </div>
+        <div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">Enter your Ghana Post GPS code and click Locate to pin your bar on the map. Find yours at <a href="https://ghanapostgps.com" target="_blank" style="color:var(--gold);">ghanapostgps.com</a></div>
+        <input type="hidden" id="v-lat" /><input type="hidden" id="v-lng" />
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group"><label>PHONE NUMBER</label><input id="v-phone" class="form-input" placeholder="+233 XX XXX XXXX" /></div>
+        <div class="form-group"><label>EMAIL ADDRESS</label><input id="v-email" class="form-input" placeholder="venue@email.com" /></div>
+      </div>
+      <div class="form-group"><label>CAPACITY (APPROX.)</label><input id="v-cap" class="form-input" placeholder="e.g. 200" /></div>
+      <button class="btn-submit" onclick="submitBar()">List Venue →</button>
+    </div>
+  </div>
+</div>
+
 <!-- Post Gig -->
 <div class="modal-overlay" id="gigModal">
   <div class="modal">
@@ -4107,6 +4137,7 @@ function submitRating() {
 }
 
 function renderLeaderboard() {
+  const lb = document.getElementById('band-leaderboard');
   const ranked = bands
     .map(b => ({ band: b, rating: getBandAvgRating(b.id) }))
     .filter(x => x.rating)
@@ -4114,11 +4145,11 @@ function renderLeaderboard() {
     .slice(0,5);
 
   if (!ranked.length) {
-    document.getElementById('band-leaderboard').style.display = 'none';
+    if (lb) lb.style.display = 'none';
     return;
   }
-  document.getElementById('band-leaderboard').style.display = 'block';
-  document.getElementById('leaderboard-rows').innerHTML = ranked.map((x,i) => `
+  if (lb) lb.style.display = 'block';
+  const lr = document.getElementById('leaderboard-rows'); if(lr) lr.innerHTML = ranked.map((x,i) => `
     <div class="leaderboard-row" onclick="navigate('/band/${slugify(x.band.name)}')">
       <span class="leaderboard-rank rank-${i+1}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</span>
       <div class="leaderboard-avatar">${initials(x.band.name)}</div>
