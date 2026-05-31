@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AccraNightOut — QA Tool</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<style>
+  :root {
+    --gold: #D4A017;
+    --gold-light: #F0C040;
+    --black: #0D0D0D;
+    --dark: #111111;
+    --dark-card: #1A1A1A;
+    --dark-border: rgba(255,255,255,0.08);
+    --text: #F0F0F0;
+    --text-muted: rgba(255,255,255,0.45);
+    --green: #2ECC71;
+    --red: #E74C3C;
+    --blue: #3498DB;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--black); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+
+  header {
+    background: var(--dark-card);
+    border-bottom: 1px solid var(--dark-border);
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .logo { font-size: 1.4rem; font-weight: 800; color: var(--gold); letter-spacing: -.02em; }
+  .badge { background: rgba(212,160,23,.15); border: 1px solid rgba(212,160,23,.3); color: var(--gold); font-size: .72rem; font-weight: 700; letter-spacing: .08em; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; }
+
+  .layout { display: grid; grid-template-columns: 380px 1fr; min-height: calc(100vh - 57px); }
+
+  .sidebar {
+    background: var(--dark);
+    border-right: 1px solid var(--dark-border);
+    padding: 1.5rem;
+    overflow-y: auto;
+  }
+
+  .main-panel { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
+
+  .section-title {
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+  }
+
+  .form-group { margin-bottom: 1rem; }
+  label { display: block; font-size: .78rem; color: var(--text-muted); margin-bottom: .4rem; font-weight: 500; }
+  label span { color: var(--gold); margin-left: 2px; }
+  input, select, textarea {
+    width: 100%;
+    background: rgba(255,255,255,.05);
+    border: 1px solid var(--dark-border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: .88rem;
+    padding: 9px 12px;
+    outline: none;
+    transition: border-color .2s;
+    font-family: inherit;
+  }
+  input:focus, select:focus, textarea:focus { border-color: rgba(212,160,23,.5); }
+  input::placeholder { color: var(--text-muted); }
+  select option { background: #1a1a1a; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+
+  .btn {
+    width: 100%;
+    padding: 11px;
+    border-radius: 10px;
+    font-size: .88rem;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all .2s;
+    font-family: inherit;
+    letter-spacing: .02em;
+  }
+  .btn-primary { background: var(--gold); color: #000; }
+  .btn-primary:hover { background: var(--gold-light); }
+  .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-secondary { background: rgba(255,255,255,.06); color: var(--text); border: 1px solid var(--dark-border); margin-top: .5rem; }
+  .btn-secondary:hover { background: rgba(255,255,255,.1); }
+  .btn-danger { background: rgba(231,76,60,.15); color: #E74C3C; border: 1px solid rgba(231,76,60,.3); margin-top: .5rem; }
+  .btn-danger:hover { background: rgba(231,76,60,.25); }
+
+  .status-log {
+    background: rgba(0,0,0,.4);
+    border: 1px solid var(--dark-border);
+    border-radius: 10px;
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: .78rem;
+    min-height: 100px;
+    max-height: 180px;
+    overflow-y: auto;
+  }
+  .log-entry { padding: 2px 0; line-height: 1.6; }
+  .log-ok { color: var(--green); }
+  .log-err { color: var(--red); }
+  .log-info { color: var(--blue); }
+  .log-warn { color: var(--gold); }
+
+  .panel {
+    background: var(--dark-card);
+    border: 1px solid var(--dark-border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .panel-header {
+    padding: .9rem 1.25rem;
+    border-bottom: 1px solid var(--dark-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .panel-title { font-size: .88rem; font-weight: 700; }
+  .panel-count { font-size: .78rem; color: var(--text-muted); }
+
+  #map { height: 320px; width: 100%; }
+
+  .bars-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: .75rem;
+    padding: 1rem;
+    max-height: 340px;
+    overflow-y: auto;
+  }
+
+  .bar-card {
+    background: rgba(255,255,255,.03);
+    border: 1px solid var(--dark-border);
+    border-radius: 10px;
+    padding: .9rem 1rem;
+    transition: border-color .2s;
+  }
+  .bar-card.new { border-color: rgba(212,160,23,.5); background: rgba(212,160,23,.05); animation: pulse-new 2s ease-out; }
+  .bar-card.pending { border-color: rgba(52,152,219,.4); background: rgba(52,152,219,.04); }
+  @keyframes pulse-new { 0%,100% { box-shadow: 0 0 0 0 rgba(212,160,23,0); } 50% { box-shadow: 0 0 0 8px rgba(212,160,23,.15); } }
+  .bar-name { font-weight: 700; font-size: .92rem; margin-bottom: .25rem; }
+  .bar-area { font-size: .78rem; color: var(--text-muted); margin-bottom: .5rem; }
+  .bar-meta { font-size: .75rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 2px; }
+  .approved-badge { display: inline-block; font-size: .65rem; font-weight: 700; padding: 2px 7px; border-radius: 20px; margin-left: 6px; vertical-align: middle; }
+  .approved-badge.yes { background: rgba(46,204,113,.15); color: var(--green); border: 1px solid rgba(46,204,113,.3); }
+  .approved-badge.pending { background: rgba(52,152,219,.15); color: var(--blue); border: 1px solid rgba(52,152,219,.3); }
+
+  .steps { display: flex; gap: 0; margin-bottom: 1.25rem; }
+  .step {
+    flex: 1;
+    text-align: center;
+    padding: .5rem;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    border-bottom: 2px solid var(--dark-border);
+    color: var(--text-muted);
+    transition: all .3s;
+  }
+  .step.active { color: var(--gold); border-color: var(--gold); }
+  .step.done { color: var(--green); border-color: var(--green); }
+
+  .test-result {
+    padding: .6rem .9rem;
+    border-radius: 8px;
+    font-size: .82rem;
+    margin-bottom: .5rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+  }
+  .test-result.pass { background: rgba(46,204,113,.1); border: 1px solid rgba(46,204,113,.2); color: var(--green); }
+  .test-result.fail { background: rgba(231,76,60,.1); border: 1px solid rgba(231,76,60,.2); color: var(--red); }
+  .test-result.pending { background: rgba(52,152,219,.1); border: 1px solid rgba(52,152,219,.2); color: var(--blue); }
+
+  .divider { border: none; border-top: 1px solid var(--dark-border); margin: 1.25rem 0; }
+
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.2); border-top-color: var(--gold); border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty-state { text-align: center; padding: 2rem; color: var(--text-muted); font-size: .85rem; }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+<header>
+  <div class="logo">AccraNightOut</div>
+  <div class="badge">QA Tool</div>
+  <div style="margin-left:auto;font-size:.78rem;color:var(--text-muted);">End-to-End Testing Suite</div>
+</header>
+
+<div class="layout">
+
+  <!-- SIDEBAR: FORM -->
+  <div class="sidebar">
+    <div class="steps" id="steps">
+      <div class="step active" id="step-1">1. Fill</div>
+      <div class="step" id="step-2">2. Submit</div>
+      <div class="step" id="step-3">3. Verify</div>
+    </div>
+
+    <div class="section-title">Add New Bar — QA Test</div>
+
+    <div class="form-group">
+      <label>Bar Name <span>*</span></label>
+      <input id="f-name" type="text" placeholder="e.g. The Jazz Corner"/>
+    </div>
+
+    <div class="form-group">
+      <label>Area <span>*</span></label>
+      <select id="f-area">
+        <option value="">Select area…</option>
+        <option>East Legon</option>
+        <option>Osu</option>
+        <option>Labadi</option>
+        <option>Adabraka</option>
+        <option>Cantonments</option>
+        <option>Airport City</option>
+        <option>Labone</option>
+        <option>Ridge</option>
+        <option>Achimota</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Address</label>
+      <input id="f-address" type="text" placeholder="e.g. 14 Nima Avenue, Accra"/>
+    </div>
+
+    <div class="form-group">
+      <label>Ghana Post GPS</label>
+      <input id="f-gps" type="text" placeholder="e.g. GA-123-4567"/>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Latitude <span>*</span></label>
+        <input id="f-lat" type="number" step="0.0001" placeholder="5.5502"/>
+      </div>
+      <div class="form-group">
+        <label>Longitude <span>*</span></label>
+        <input id="f-lng" type="number" step="0.0001" placeholder="-0.1969"/>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Phone <span>*</span></label>
+        <input id="f-phone" type="tel" placeholder="+233 XX XXX XXXX"/>
+      </div>
+      <div class="form-group">
+        <label>Capacity</label>
+        <input id="f-cap" type="number" placeholder="200"/>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Email <span>*</span></label>
+      <input id="f-email" type="email" placeholder="contact@bar.com"/>
+    </div>
+
+    <hr class="divider"/>
+
+    <button class="btn btn-primary" id="btn-submit" onclick="runQATest()">Run QA Test</button>
+    <button class="btn btn-secondary" onclick="prefill()">Autofill Test Data</button>
+    <button class="btn btn-danger" onclick="deleteTestBar()" id="btn-delete" style="display:none">Delete Test Bar</button>
+
+    <hr class="divider"/>
+
+    <div class="section-title">Test Log</div>
+    <div class="status-log" id="log"><div class="log-entry log-info">Ready. Fill the form or click Autofill, then Run QA Test.</div></div>
+
+  </div>
+
+  <!-- MAIN PANEL: RESULTS -->
+  <div class="main-panel">
+
+    <!-- TEST RESULTS -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Test Results</div>
+        <div class="panel-count" id="test-summary">Waiting…</div>
+      </div>
+      <div style="padding:1rem;" id="test-results">
+        <div class="empty-state">Submit the form to run tests</div>
+      </div>
+    </div>
+
+    <!-- MAP -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Map Verification</div>
+        <div class="panel-count" id="map-status">Loading map…</div>
+      </div>
+      <div id="map"></div>
+    </div>
+
+    <!-- BAR CARDS -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Bar Cards (Live from Supabase)</div>
+        <div class="panel-count" id="bars-count">—</div>
+      </div>
+      <div class="bars-grid" id="bars-grid">
+        <div class="empty-state">Loading bars…</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const SUPA_URL = 'https://xgbtusppzigjpjejekaq.supabase.co';
+const SUPA_KEY = 'sb_publishable_Yx1R6C9NR23CUAMesgGtSg_egUj5fQ2';
+const HEADERS = {
+  'apikey': SUPA_KEY,
+  'Authorization': `Bearer ${SUPA_KEY}`,
+  'Content-Type': 'application/json',
+  'Accept': 'application/json',
+  'Prefer': 'return=representation'
+};
+
+let map, markers = [], testBarId = null, allBars = [];
+
+function log(msg, type='info') {
+  const el = document.getElementById('log');
+  const entry = document.createElement('div');
+  entry.className = `log-entry log-${type}`;
+  const time = new Date().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  entry.textContent = `[${time}] ${msg}`;
+  el.appendChild(entry);
+  el.scrollTop = el.scrollHeight;
+}
+
+function setStep(n) {
+  [1,2,3].forEach(i => {
+    const el = document.getElementById(`step-${i}`);
+    el.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
+  });
+}
+
+function addTestResult(label, status, detail='') {
+  const container = document.getElementById('test-results');
+  if (container.querySelector('.empty-state')) container.innerHTML = '';
+  const div = document.createElement('div');
+  div.className = `test-result ${status}`;
+  const icon = status === 'pass' ? '✓' : status === 'fail' ? '✗' : '⏳';
+  div.innerHTML = `<strong>${icon} ${label}</strong>${detail ? ` — ${detail}` : ''}`;
+  container.appendChild(div);
+}
+
+function updateSummary() {
+  const all = document.querySelectorAll('.test-result');
+  const pass = document.querySelectorAll('.test-result.pass').length;
+  const fail = document.querySelectorAll('.test-result.fail').length;
+  document.getElementById('test-summary').textContent = `${pass} passed · ${fail} failed · ${all.length} total`;
+}
+
+async function sbFetch(table, opts={}) {
+  const {filters=[], order=null, insert=null, eq=null, del=null} = opts;
+  let url = `${SUPA_URL}/rest/v1/${table}`;
+  if (insert) {
+    const r = await fetch(url, {method:'POST', headers: HEADERS, body: JSON.stringify(insert)});
+    return r.ok ? await r.json() : null;
+  }
+  if (del && eq) {
+    url += `?${eq[0]}=eq.${eq[1]}`;
+    const r = await fetch(url, {method:'DELETE', headers: HEADERS});
+    return r.ok;
+  }
+  let p = ['select=*'];
+  filters.forEach(f => p.push(f));
+  if (order) p.push(`order=${order}`);
+  url += '?' + p.join('&');
+  const r = await fetch(url, {headers: HEADERS});
+  return r.ok ? r.json() : [];
+}
+
+function prefill() {
+  const names = ['The Highlife Lounge','Afro Jazz Den','Golden Vibes Bar','Rhythm & Soul Club','The Accra Spot'];
+  const areas = ['East Legon','Osu','Labadi','Adabraka','Cantonments'];
+  const idx = Math.floor(Math.random() * names.length);
+  document.getElementById('f-name').value = `[QA TEST] ${names[idx]}`;
+  document.getElementById('f-area').value = areas[idx];
+  document.getElementById('f-address').value = `${Math.floor(Math.random()*99)+1} Test Street, Accra`;
+  document.getElementById('f-gps').value = '';
+  document.getElementById('f-lat').value = (5.5 + Math.random() * 0.15).toFixed(4);
+  document.getElementById('f-lng').value = (-0.22 + Math.random() * 0.1).toFixed(4);
+  document.getElementById('f-phone').value = `+233 ${Math.floor(Math.random()*9+1)}0 ${Math.floor(Math.random()*9000+1000)} ${Math.floor(Math.random()*9000+1000)}`;
+  document.getElementById('f-email').value = `qa-test-${Date.now()}@accranightout-qa.com`;
+  document.getElementById('f-cap').value = Math.floor(Math.random()*300+50);
+  log('Test data autofilled', 'info');
+  setStep(1);
+}
+
+async function runQATest() {
+  const name = document.getElementById('f-name').value.trim();
+  const area = document.getElementById('f-area').value.trim();
+  const address = document.getElementById('f-address').value.trim();
+  const gps = document.getElementById('f-gps').value.trim();
+  const lat = parseFloat(document.getElementById('f-lat').value) || 5.5502;
+  const lng = parseFloat(document.getElementById('f-lng').value) || -0.1969;
+  const phone = document.getElementById('f-phone').value.trim();
+  const email = document.getElementById('f-email').value.trim();
+  const cap = parseInt(document.getElementById('f-cap').value) || 0;
+
+  if (!name || !area || !phone || !email) {
+    log('Missing required fields (Name, Area, Phone, Email)', 'err');
+    return;
+  }
+
+  document.getElementById('test-results').innerHTML = '';
+  document.getElementById('test-summary').textContent = 'Running…';
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Running tests…';
+
+  setStep(2);
+  log(`Starting QA test for: ${name}`, 'info');
+
+  // TEST 1: Supabase connection
+  log('Test 1: Checking Supabase connection…', 'info');
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/bars?select=count&limit=1`, {headers: HEADERS});
+    if (r.ok) {
+      addTestResult('Supabase connection', 'pass', `HTTP ${r.status}`);
+      log('✓ Supabase connected', 'ok');
+    } else {
+      addTestResult('Supabase connection', 'fail', `HTTP ${r.status}`);
+      log(`✗ Supabase error: ${r.status}`, 'err');
+    }
+  } catch(e) {
+    addTestResult('Supabase connection', 'fail', e.message);
+    log(`✗ Connection failed: ${e.message}`, 'err');
+  }
+
+  // TEST 2: Insert bar
+  log('Test 2: Inserting test bar…', 'info');
+  const insertData = { name, area, address, gps, lat, lng, phone, email, cap, approved: false };
+  const inserted = await sbFetch('bars', { insert: insertData });
+  if (inserted && inserted[0] && inserted[0].id) {
+    testBarId = inserted[0].id;
+    addTestResult('Bar insertion', 'pass', `ID: ${testBarId}`);
+    log(`✓ Bar inserted with ID: ${testBarId}`, 'ok');
+    document.getElementById('btn-delete').style.display = 'block';
+  } else {
+    addTestResult('Bar insertion', 'fail', 'No ID returned');
+    log('✗ Insert failed', 'err');
+    btn.disabled = false;
+    btn.textContent = 'Run QA Test';
+    return;
+  }
+
+  // TEST 3: Fetch all bars and verify new one appears
+  log('Test 3: Fetching bars from database…', 'info');
+  allBars = await sbFetch('bars', { order: 'created_at.desc' });
+  const found = allBars.find(b => b.id === testBarId);
+  if (found) {
+    addTestResult('Bar appears in database', 'pass', `Found "${found.name}"`);
+    log(`✓ Bar found in DB: "${found.name}"`, 'ok');
+  } else {
+    addTestResult('Bar appears in database', 'fail', 'Not found in fetch');
+    log('✗ Bar not found in DB fetch', 'err');
+  }
+
+  // TEST 4: Render cards
+  log('Test 4: Rendering bar cards…', 'info');
+  renderBarCards(allBars, testBarId);
+  const approvedBars = allBars.filter(b => b.approved);
+  addTestResult('Bar cards rendered', 'pass', `${approvedBars.length} approved + 1 pending test bar`);
+  log(`✓ Cards rendered: ${allBars.length} total`, 'ok');
+  document.getElementById('bars-count').textContent = `${allBars.length} bars (${approvedBars.length} approved, ${allBars.length - approvedBars.length} pending)`;
+
+  // TEST 5: Map pin
+  log('Test 5: Plotting bar on map…', 'info');
+  if (found && found.lat && found.lng) {
+    plotBarOnMap(found, true);
+    addTestResult('Map pin plotted', 'pass', `${found.lat}, ${found.lng}`);
+    log(`✓ Pin plotted at ${found.lat}, ${found.lng}`, 'ok');
+    document.getElementById('map-status').textContent = `${allBars.filter(b=>b.lat&&b.lng).length} pins plotted`;
+  } else {
+    addTestResult('Map pin plotted', 'fail', 'No coordinates');
+    log('✗ No coordinates to plot', 'err');
+  }
+
+  // TEST 6: Pending approval check
+  log('Test 6: Checking approval status…', 'info');
+  if (found && found.approved === false) {
+    addTestResult('Pending approval (correct)', 'pass', 'approved=false as expected');
+    log('✓ Bar correctly marked as pending approval', 'ok');
+  } else {
+    addTestResult('Pending approval check', 'fail', 'Unexpected approval status');
+    log('✗ Approval status unexpected', 'warn');
+  }
+
+  setStep(3);
+  updateSummary();
+  btn.disabled = false;
+  btn.textContent = 'Run QA Test Again';
+  log('QA test complete.', 'ok');
+}
+
+function renderBarCards(bars, highlightId) {
+  const grid = document.getElementById('bars-grid');
+  grid.innerHTML = '';
+  if (!bars.length) { grid.innerHTML = '<div class="empty-state">No bars found</div>'; return; }
+  [...bars].sort((a,b) => {
+    if (a.id === highlightId) return -1;
+    if (b.id === highlightId) return 1;
+    return 0;
+  }).forEach(bar => {
+    const card = document.createElement('div');
+    const isNew = bar.id === highlightId;
+    card.className = `bar-card ${isNew ? 'new' : bar.approved ? '' : 'pending'}`;
+    card.innerHTML = `
+      <div class="bar-name">${bar.name}
+        <span class="approved-badge ${bar.approved ? 'yes' : 'pending'}">${bar.approved ? 'Approved' : 'Pending'}</span>
+        ${isNew ? '<span class="approved-badge" style="background:rgba(212,160,23,.15);color:var(--gold);border-color:rgba(212,160,23,.3);">NEW</span>' : ''}
+      </div>
+      <div class="bar-area">${bar.area}, Accra</div>
+      <div class="bar-meta">
+        ${bar.address ? `<span>📍 ${bar.address}</span>` : ''}
+        ${bar.phone ? `<span>📞 ${bar.phone}</span>` : ''}
+        ${bar.cap ? `<span>👥 Capacity ~${bar.cap}</span>` : ''}
+        ${bar.lat ? `<span>🌍 ${parseFloat(bar.lat).toFixed(4)}, ${parseFloat(bar.lng).toFixed(4)}</span>` : ''}
+      </div>
+    `;
+    card.onclick = () => { if(bar.lat && bar.lng) map.flyTo([bar.lat, bar.lng], 15); };
+    grid.appendChild(card);
+  });
+}
+
+function plotBarOnMap(highlightBar, flyTo=false) {
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+  allBars.forEach(bar => {
+    if (!bar.lat || !bar.lng) return;
+    const isNew = bar.id === highlightBar?.id;
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="width:${isNew?22:14}px;height:${isNew?22:14}px;background:${isNew?'#D4A017':'rgba(212,160,23,0.5)'};border-radius:50%;border:${isNew?'3px solid #fff':'2px solid rgba(255,255,255,0.4)'};box-shadow:${isNew?'0 0 12px rgba(212,160,23,0.8)':'none'};"></div>`,
+      iconSize: [isNew?22:14, isNew?22:14]
+    });
+    const m = L.marker([bar.lat, bar.lng], {icon}).addTo(map);
+    m.bindPopup(`<div style="font-family:sans-serif;font-size:13px;"><strong>${bar.name}</strong><br/>${bar.area}, Accra${isNew ? '<br/><span style="color:#D4A017;font-weight:bold;">★ NEW TEST BAR</span>' : ''}</div>`);
+    if (isNew) { m.openPopup(); }
+    markers.push(m);
+  });
+  if (flyTo && highlightBar?.lat) {
+    map.flyTo([highlightBar.lat, highlightBar.lng], 14, {duration: 1.5});
+  }
+}
+
+async function deleteTestBar() {
+  if (!testBarId) return;
+  if (!confirm(`Delete test bar ID ${testBarId}? This removes it from Supabase.`)) return;
+  log(`Deleting test bar ID: ${testBarId}…`, 'warn');
+  const ok = await sbFetch('bars', { del: true, eq: ['id', testBarId] });
+  if (ok) {
+    log(`✓ Test bar ${testBarId} deleted`, 'ok');
+    testBarId = null;
+    document.getElementById('btn-delete').style.display = 'none';
+    allBars = await sbFetch('bars', { order: 'created_at.desc' });
+    renderBarCards(allBars, null);
+    plotBarOnMap(null);
+    document.getElementById('bars-count').textContent = `${allBars.length} bars`;
+    document.getElementById('map-status').textContent = `${allBars.filter(b=>b.lat&&b.lng).length} pins`;
+  } else {
+    log('✗ Delete failed', 'err');
+  }
+}
+
+async function initMap() {
+  map = L.map('map', {zoomControl: true}).setView([5.56, -0.20], 12);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap © CARTO',
+    maxZoom: 19
+  }).addTo(map);
+  log('Map initialised', 'ok');
+
+  // Load existing approved bars onto map
+  allBars = await sbFetch('bars', { order: 'created_at.desc' });
+  renderBarCards(allBars, null);
+  const withCoords = allBars.filter(b => b.lat && b.lng);
+  withCoords.forEach(bar => {
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="width:14px;height:14px;background:rgba(212,160,23,0.6);border-radius:50%;border:2px solid rgba(255,255,255,0.3);"></div>`,
+      iconSize: [14, 14]
+    });
+    const m = L.marker([bar.lat, bar.lng], {icon}).addTo(map);
+    m.bindPopup(`<div style="font-family:sans-serif;font-size:13px;"><strong>${bar.name}</strong><br/>${bar.area}, Accra</div>`);
+    markers.push(m);
+  });
+  document.getElementById('map-status').textContent = `${withCoords.length} pins loaded`;
+  document.getElementById('bars-count').textContent = `${allBars.length} bars total`;
+  log(`Loaded ${allBars.length} bars (${withCoords.length} with coordinates)`, 'ok');
+}
+
+initMap();
+</script>
+</body>
+</html>
