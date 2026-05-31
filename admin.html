@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AccraNightOut — Admin</title>
+<meta name="robots" content="noindex, nofollow" />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --gold: #D4A017; --gold-light: #F5D06A;
+    --green: #1A6B3C; --green-light: #2FA869;
+    --red: #C0392B; --black: #0D0D0D;
+    --off-black: #1A1A1A; --dark-card: #1E1E1E;
+    --dark-border: #2E2E2E; --text: #F0EDE6;
+    --text-muted: #A09A8E; --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--black); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+
+  /* ── LOGIN SCREEN ── */
+  .login-screen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 2rem;
+    background: radial-gradient(ellipse at 50% 0%, rgba(212,160,23,.08) 0%, transparent 60%);
+  }
+  .login-card {
+    background: var(--dark-card); border: 1px solid var(--dark-border);
+    border-radius: 20px; padding: 2.5rem 2rem; width: 100%; max-width: 380px;
+    text-align: center;
+  }
+  .login-logo {
+    width: 56px; height: 56px; border-radius: 14px;
+    background: rgba(212,160,23,.12); border: 1px solid rgba(212,160,23,.25);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem; margin: 0 auto 1.5rem;
+  }
+  .login-title { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 800; margin-bottom: .3rem; }
+  .login-sub { font-size: .82rem; color: var(--text-muted); margin-bottom: 1.75rem; }
+  .pin-input {
+    width: 100%; background: rgba(255,255,255,.04); border: 1px solid var(--dark-border);
+    border-radius: 10px; color: var(--text); font-family: 'DM Sans', sans-serif;
+    font-size: 1.4rem; padding: 12px 16px; outline: none; text-align: center;
+    letter-spacing: .3em; transition: border-color .2s; margin-bottom: .75rem;
+  }
+  .pin-input:focus { border-color: var(--gold); }
+  .btn-login {
+    width: 100%; background: var(--gold); color: var(--black);
+    border: none; border-radius: 10px; font-family: 'Syne', sans-serif;
+    font-size: 1rem; font-weight: 700; padding: 13px; cursor: pointer;
+    transition: background .2s;
+  }
+  .btn-login:hover { background: var(--gold-light); }
+  .login-error { font-size: .78rem; color: #e67e73; min-height: 1.2rem; margin-bottom: .5rem; }
+  .back-link {
+    display: inline-block; margin-top: 1.25rem;
+    font-size: .78rem; color: var(--text-muted); text-decoration: none;
+  }
+  .back-link:hover { color: var(--text); }
+
+  /* ── ADMIN DASHBOARD ── */
+  .admin-app { display: none; }
+  .admin-nav {
+    background: var(--off-black); border-bottom: 1px solid var(--dark-border);
+    padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .admin-nav-brand { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.1rem; color: var(--gold); }
+  .admin-nav-brand span { color: var(--text); }
+  .admin-nav-right { display: flex; align-items: center; gap: 12px; }
+  .admin-badge {
+    background: rgba(212,160,23,.12); border: 1px solid rgba(212,160,23,.25);
+    border-radius: 100px; padding: 4px 12px;
+    font-size: .72rem; font-weight: 700; color: var(--gold); letter-spacing: .05em;
+  }
+  .btn-logout {
+    background: rgba(255,255,255,.05); border: 1px solid var(--dark-border);
+    border-radius: 8px; color: var(--text-muted); font-family: 'DM Sans', sans-serif;
+    font-size: .78rem; padding: 6px 14px; cursor: pointer; transition: all .2s;
+  }
+  .btn-logout:hover { border-color: #e67e73; color: #e67e73; }
+
+  .admin-body { padding: 2rem; max-width: 1200px; margin: 0 auto; }
+  .admin-section { margin-bottom: 2.5rem; }
+  .admin-section-title {
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.05rem;
+    margin-bottom: 1rem; display: flex; align-items: center; gap: 10px;
+  }
+  .count-badge {
+    background: rgba(212,160,23,.12); color: var(--gold);
+    border-radius: 100px; padding: 2px 10px; font-size: .72rem; font-weight: 700;
+  }
+
+  /* Stats row */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 2rem; }
+  .stat-card {
+    background: var(--dark-card); border: 1px solid var(--dark-border);
+    border-radius: var(--radius); padding: 1.1rem 1.25rem;
+  }
+  .stat-num { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800; color: var(--gold); }
+  .stat-label { font-size: .78rem; color: var(--text-muted); margin-top: 2px; }
+
+  /* Tables */
+  .table-wrap { overflow-x: auto; background: var(--dark-card); border: 1px solid var(--dark-border); border-radius: var(--radius); }
+  table { width: 100%; border-collapse: collapse; font-size: .83rem; }
+  th { text-align: left; padding: 10px 14px; font-size: .72rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--dark-border); }
+  td { padding: 11px 14px; border-bottom: 1px solid rgba(255,255,255,.04); color: var(--text); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,.02); }
+
+  /* Approval cards */
+  .approval-card {
+    background: var(--dark-card); border: 1px solid rgba(212,160,23,.25);
+    border-radius: var(--radius); margin-bottom: 10px; overflow: hidden;
+  }
+  .approval-card-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: .85rem 1.25rem; border-bottom: 1px solid var(--dark-border);
+  }
+  .badge { font-size: .68rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; padding: 3px 9px; border-radius: 100px; }
+  .badge-band { background: rgba(74,32,112,.4); color: #c084fc; }
+  .badge-bar  { background: rgba(26,107,60,.3); color: #2FA869; }
+  .badge-gig  { background: rgba(212,160,23,.15); color: #D4A017; }
+  .approval-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: .95rem; flex: 1; }
+  .approval-time { font-size: .72rem; color: var(--text-muted); }
+  .approval-body { padding: .75rem 1.25rem; font-size: .8rem; color: var(--text-muted); display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; }
+  .approval-body span { color: var(--text); }
+  .approval-actions { display: flex; gap: 8px; padding: .75rem 1.25rem; border-top: 1px solid var(--dark-border); }
+  .btn-approve { flex:1; padding:8px; background:rgba(47,168,105,.15); border:1px solid rgba(47,168,105,.35); border-radius:8px; color:#2FA869; font-family:'Syne',sans-serif; font-size:.82rem; font-weight:700; cursor:pointer; transition:background .2s; }
+  .btn-approve:hover { background:rgba(47,168,105,.3); }
+  .btn-reject { flex:1; padding:8px; background:rgba(192,57,43,.1); border:1px solid rgba(192,57,43,.25); border-radius:8px; color:#e67e73; font-family:'Syne',sans-serif; font-size:.82rem; font-weight:700; cursor:pointer; transition:background .2s; }
+  .btn-reject:hover { background:rgba(192,57,43,.22); }
+
+  .empty-state { text-align:center; padding:2.5rem; color:var(--text-muted); font-size:.85rem; }
+
+  .genre-tag { display:inline-block; background:rgba(212,160,23,.1); color:var(--gold); border-radius:100px; padding:1px 7px; font-size:.68rem; font-weight:600; margin:1px; }
+  .notify-pill { display:inline-flex; align-items:center; gap:4px; background:rgba(255,255,255,.06); border-radius:100px; padding:2px 9px; font-size:.72rem; color:var(--text-muted); }
+  .res-confirmed { background:rgba(47,168,105,.15); color:#2FA869; border-radius:100px; padding:2px 9px; font-size:.72rem; font-weight:600; }
+  .res-pending { background:rgba(212,160,23,.12); color:var(--gold); border-radius:100px; padding:2px 9px; font-size:.72rem; font-weight:600; }
+
+  @media (max-width: 768px) {
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .admin-body { padding: 1rem; }
+    .approval-body { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN ── -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">🔐</div>
+    <div class="login-title">AccraNightOut</div>
+    <div class="login-sub">Admin panel — authorised access only</div>
+    <input class="pin-input" type="password" id="pinInput" maxlength="8" placeholder="••••"
+      onkeydown="if(event.key==='Enter') attemptLogin()" autofocus />
+    <div class="login-error" id="loginError"></div>
+    <button class="btn-login" onclick="attemptLogin()">Access Dashboard</button>
+    <a href="/" class="back-link">← Back to AccraNightOut</a>
+  </div>
+</div>
+
+<!-- ── DASHBOARD ── -->
+<div class="admin-app" id="adminApp">
+  <nav class="admin-nav">
+    <div class="admin-nav-brand">Accra<span>NightOut</span> <span style="font-size:.7rem;color:var(--text-muted);font-weight:400;margin-left:6px;">Admin</span></div>
+    <div class="admin-nav-right">
+      <span class="admin-badge">🔒 ADMIN SESSION</span>
+      <button class="btn-logout" onclick="logout()">Log Out</button>
+    </div>
+  </nav>
+
+  <div class="admin-body">
+
+    <!-- Stats -->
+    <div class="stats-row" id="adminStats"></div>
+
+    <!-- Pending Approvals -->
+    <div class="admin-section">
+      <div class="admin-section-title">
+        ⏳ Pending Approvals
+        <span class="count-badge" id="pendingCount">0</span>
+      </div>
+      <div id="approvalList"><div class="empty-state">✅ No pending listings</div></div>
+    </div>
+
+    <!-- Subscribers -->
+    <div class="admin-section">
+      <div class="admin-section-title">
+        🔔 Patron Subscribers
+        <span class="count-badge" id="patronCount">0</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Contact</th><th>Notify</th><th>Genres</th><th>Joined</th></tr></thead>
+          <tbody id="patronTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Reservations -->
+    <div class="admin-section">
+      <div class="admin-section-title">
+        🪑 Table Reservations
+        <span class="count-badge" id="resCount">0</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Guest</th><th>Bar</th><th>Date & Time</th><th>Seats</th><th>Occasion</th><th>Status</th></tr></thead>
+          <tbody id="resTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── AUTH ──
+// PIN is hashed — SHA-256 of your admin PIN
+// CHANGE THIS before going live — see instructions below
+// To generate a new hash run in browser console:
+// crypto.subtle.digest('SHA-256', new TextEncoder().encode('yourPIN')).then(b => console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')))
+const PIN_HASH = '9520e66edc73a1cd83a0ab97b124be04a31f66029e689899e6fc2077ad56de86';
+
+async function hashPin(pin) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin));
+  return [...new Uint8Array(buf)].map(x => x.toString(16).padStart(2,'0')).join('');
+}
+
+async function attemptLogin() {
+  const pin = document.getElementById('pinInput').value;
+  const errEl = document.getElementById('loginError');
+  if (!pin) { errEl.textContent = 'Please enter your PIN.'; return; }
+  const hash = await hashPin(pin);
+  if (hash === PIN_HASH) {
+    sessionStorage.setItem('ano_admin', '1');
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('adminApp').style.display = 'block';
+    loadDashboard();
+  } else {
+    errEl.textContent = 'Incorrect PIN. Please try again.';
+    document.getElementById('pinInput').value = '';
+    document.getElementById('pinInput').focus();
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem('ano_admin');
+  document.getElementById('adminApp').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('pinInput').value = '';
+}
+
+// Check if already logged in this session
+if (sessionStorage.getItem('ano_admin') === '1') {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('adminApp').style.display = 'block';
+}
+
+// ── SHARED DATA (read from localStorage if available) ──
+// In production these would come from a real backend
+// For now we seed with the same demo data as index.html
+const patrons = JSON.parse(localStorage.getItem('ano_patrons') || 'null') || [
+  { id:1, fname:"Ama", lname:"Owusu", email:"ama@mail.com", phone:"+233 24 100 2001", notify:"both", genres:["Highlife","Afrobeats"], areas:"Osu, Labadi", joined:"2025-05-10" },
+  { id:2, fname:"Kofi", lname:"Asante", email:"kofi@mail.com", phone:"", notify:"email", genres:["Jazz","Afro-Jazz"], areas:"East Legon", joined:"2025-05-18" },
+  { id:3, fname:"Abena", lname:"Frimpong", email:"abena@mail.com", phone:"+233 50 300 4400", notify:"whatsapp", genres:["Gospel"], areas:"Adabraka", joined:"2025-05-22" },
+];
+
+const reservations = JSON.parse(localStorage.getItem('ano_reservations') || 'null') || [
+  { id:1, barId:1, barName:"Skybar 25", name:"Ama Owusu", phone:"+233 24 100 2001", date:"2026-06-06", time:"20:00", seats:4, occasion:"Birthday", status:"confirmed" },
+  { id:2, barId:2, barName:"Republic Bar & Grill", name:"Kofi Asante", phone:"+233 50 200 3003", date:"2026-06-07", time:"21:00", seats:2, occasion:"Date night", status:"confirmed" },
+  { id:3, barId:1, barName:"Skybar 25", name:"Yaw Mensah", phone:"+233 26 400 5005", date:"2026-06-08", time:"19:30", seats:6, occasion:"Corporate event", status:"pending" },
+];
+
+const pendingQueue = JSON.parse(localStorage.getItem('ano_pending') || '[]');
+
+// ── DASHBOARD ──
+function loadDashboard() {
+  // Stats
+  document.getElementById('adminStats').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${patrons.length}</div><div class="stat-label">Subscribers</div></div>
+    <div class="stat-card"><div class="stat-num">${reservations.length}</div><div class="stat-label">Reservations</div></div>
+    <div class="stat-card"><div class="stat-num">${pendingQueue.length}</div><div class="stat-label">Pending Approvals</div></div>
+    <div class="stat-card"><div class="stat-num">${reservations.filter(r=>r.status==='pending').length}</div><div class="stat-label">Unconfirmed Bookings</div></div>
+  `;
+
+  // Approvals
+  document.getElementById('pendingCount').textContent = pendingQueue.length;
+  document.getElementById('approvalList').innerHTML = pendingQueue.length ? pendingQueue.map(item => {
+    let title = '', details = '', badgeClass = '';
+    if (item.type==='band') {
+      badgeClass='badge-band'; title=item.data.name;
+      details=`<div>Genre</div><span>${item.data.genre}</span><div>Members</div><span>${item.data.members}</span><div>Phone</div><span>${item.data.phone}</span><div>Email</div><span>${item.data.email}</span>`;
+    } else if (item.type==='bar') {
+      badgeClass='badge-bar'; title=item.data.name;
+      details=`<div>Area</div><span>${item.data.area}</span><div>Phone</div><span>${item.data.phone}</span><div>Email</div><span>${item.data.email}</span><div>Address</div><span>${item.data.address}</span>`;
+    } else if (item.type==='gig') {
+      badgeClass='badge-gig'; title=`${item.bandName||'Band'} @ ${item.barName||'Venue'}`;
+      details=`<div>Date</div><span>${item.data.date}</span><div>Time</div><span>${item.data.time}</span><div>Price</div><span>${item.data.price?'GHS '+item.data.price:'Free'}</span><div>Recurring</div><span>${item.data.concurrent?'Yes':'No'}</span>`;
+    }
+    return `<div class="approval-card">
+      <div class="approval-card-header">
+        <span class="badge ${badgeClass}">${item.type}</span>
+        <span class="approval-name">${title}</span>
+        <span class="approval-time">${item.submittedAt}</span>
+      </div>
+      <div class="approval-body">${details}</div>
+      <div class="approval-actions">
+        <button class="btn-approve" onclick="approveItem(${item.id})">✅ Approve & Go Live</button>
+        <button class="btn-reject" onclick="rejectItem(${item.id})">❌ Reject</button>
+      </div>
+    </div>`;
+  }).join('') : '<div class="empty-state">✅ No pending listings — all clear!</div>';
+
+  // Patrons
+  document.getElementById('patronCount').textContent = patrons.length;
+  document.getElementById('patronTable').innerHTML = patrons.map(p => {
+    const notifyIcons = { email:'📧 Email', whatsapp:'💬 WhatsApp', both:'📲 Both' };
+    return `<tr>
+      <td><strong>${p.fname} ${p.lname}</strong></td>
+      <td><div>${p.email}</div>${p.phone?`<div style="font-size:.75rem;color:var(--text-muted);">${p.phone}</div>`:''}</td>
+      <td><span class="notify-pill">${notifyIcons[p.notify]||p.notify}</span></td>
+      <td>${p.genres.map(g=>`<span class="genre-tag">${g}</span>`).join('')}</td>
+      <td style="color:var(--text-muted);font-size:.78rem;">${p.joined}</td>
+    </tr>`;
+  }).join('');
+
+  // Reservations
+  document.getElementById('resCount').textContent = reservations.length;
+  document.getElementById('resTable').innerHTML = reservations.map(r =>
+    `<tr>
+      <td><strong>${r.name}</strong><div style="font-size:.75rem;color:var(--text-muted);">${r.phone}</div></td>
+      <td>${r.barName||'—'}</td>
+      <td>${r.date}<br/><span style="color:var(--text-muted);font-size:.75rem;">${r.time}</span></td>
+      <td>🪑 ${r.seats}</td>
+      <td style="font-size:.78rem;color:var(--text-muted);">${r.occasion||'—'}</td>
+      <td><span class="${r.status==='confirmed'?'res-confirmed':'res-pending'}">${r.status==='confirmed'?'✅ Confirmed':'⏳ Pending'}</span></td>
+    </tr>`
+  ).join('');
+}
+
+function approveItem(id) {
+  const idx = pendingQueue.findIndex(x=>x.id===id);
+  if (idx === -1) return;
+  pendingQueue.splice(idx, 1);
+  localStorage.setItem('ano_pending', JSON.stringify(pendingQueue));
+  alert('Listing approved. It will go live next time the site syncs.');
+  loadDashboard();
+}
+
+function rejectItem(id) {
+  if (!confirm('Reject this listing? This cannot be undone.')) return;
+  const idx = pendingQueue.findIndex(x=>x.id===id);
+  if (idx === -1) return;
+  pendingQueue.splice(idx, 1);
+  localStorage.setItem('ano_pending', JSON.stringify(pendingQueue));
+  loadDashboard();
+}
+
+// Auto-load if already authenticated
+if (sessionStorage.getItem('ano_admin') === '1') {
+  loadDashboard();
+}
+</script>
+</body>
+</html>
