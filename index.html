@@ -5482,25 +5482,9 @@ if (isIOS() && !isInStandaloneMode() && !sessionStorage.getItem('pwaDismissed'))
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    
-    const swCode = `
-const CACHE = 'accranightout-v1';
-const ASSETS = ['/'];
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
-});
-self.addEventListener('fetch', e => {
-  e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match('/')))
-  );
-});
-    `;
-    const blob = new Blob([swCode], {type:'application/javascript'});
-    const swUrl = URL.createObjectURL(blob);
-    navigator.serviceWorker.register(swUrl).catch(()=>{});
+    navigator.serviceWorker.register('/sw.js').catch(()=>{});
   });
 }
-
 // Manifest served as /manifest.json
 
 // ── VISITOR COUNTER ──
@@ -5774,4 +5758,9 @@ loadAllData().then(() => { handleRoute(getRoute()); initPushPrompt(); });
 <div class="toast" id="toast"></div>
 
 </body>
-</html>
+// Register service worker for offline support
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  });
+}
