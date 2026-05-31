@@ -4551,9 +4551,8 @@ function showTab(tab) {
 // ── MODALS ──
 function openModal(id) {
   document.body.style.overflow = 'hidden';
-  if (barMap) { barMap.scrollWheelZoom.disable(); barMap.dragging.disable(); }
-  const mapEl = document.getElementById('barMap');
-  if (mapEl) mapEl.style.zIndex = '0';
+  const mapSection = document.querySelector('.map-section');
+  if (mapSection) mapSection.style.visibility = 'hidden';
   if (id==='gigModal') populateGigSelects();
   if (id==='patronModal') buildGenrePrefGrid();
   if (id==='playlistModal') populatePlaylistSelects();
@@ -4562,9 +4561,8 @@ function openModal(id) {
 function closeModal(id) {
   document.getElementById(id).classList.remove('open');
   document.body.style.overflow = '';
-  if (barMap) { barMap.scrollWheelZoom.enable(); barMap.dragging.enable(); }
-  const mapEl = document.getElementById('barMap');
-  if (mapEl) mapEl.style.zIndex = '';
+  const mapSection = document.querySelector('.map-section');
+  if (mapSection) mapSection.style.visibility = '';
 }
 document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if(e.target===el) el.classList.remove('open'); });
