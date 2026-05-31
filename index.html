@@ -2535,8 +2535,97 @@
     </button>
   </div>
 
+</main>
 
-</div>
+<!-- ── BANDS TAB ── -->
+<main class="main" id="tab-bands">
+  <div class="tab-actions">
+    <button class="reg-btn" onclick="openModal('bandModal')">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+      Register Band
+    </button>
+  </div>
+  <div class="section-header">
+    <div class="section-title">Registered Bands</div>
+    <div class="section-count" id="band-count"></div>
+  </div>
+  <div class="cards-grid" id="bands-grid"></div>
+  <div style="margin-top:2rem;">
+    <div class="section-title" style="margin-bottom:1rem;">🏆 Band Leaderboard</div>
+    <div id="leaderboard-rows"></div>
+  </div>
+</main>
+
+<!-- ── EVENTS TAB ── -->
+<main class="main" id="tab-events">
+  <div class="tab-actions">
+    <button class="reg-btn" onclick="openModal('eventModal')">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Post an Event
+    </button>
+  </div>
+  <div class="section-header">
+    <div class="section-title">Upcoming Events</div>
+    <div class="section-count" id="event-count"></div>
+  </div>
+  <div id="event-filters" class="filter-row"></div>
+  <div class="cards-grid" id="events-grid"></div>
+</main>
+
+<!-- ── EDITORIAL TAB ── -->
+<main class="main" id="tab-editorial">
+  <div class="section-header">
+    <div class="section-title">✍️ Editorial</div>
+  </div>
+  <div id="editorial-grid" class="cards-grid"></div>
+  <div id="weekly-picks-strip"></div>
+</main>
+
+<!-- ── PATRONS TAB ── -->
+<main class="main" id="tab-patrons">
+  <div id="patron-locked">
+    <div class="section-header">
+      <div class="section-title">🔔 Get Weekly Alerts</div>
+    </div>
+    <div class="modal-body" style="max-width:480px;margin:0 auto;padding:2rem 1rem;">
+      <p style="color:var(--text-muted);margin-bottom:1.5rem;font-size:.9rem;line-height:1.65;">Sign up to receive a weekly digest of upcoming gigs, new venues and band news straight to your inbox.</p>
+      <div class="form-group"><label>First Name</label><input id="p-fname" class="form-input" placeholder="Kofi" /></div>
+      <div class="form-group"><label>Last Name</label><input id="p-lname" class="form-input" placeholder="Mensah" /></div>
+      <div class="form-group"><label>Email</label><input id="p-email" type="email" class="form-input" placeholder="kofi@email.com" /></div>
+      <div class="form-group"><label>Phone (WhatsApp)</label><input id="p-phone" class="form-input" placeholder="+233 XX XXX XXXX" /></div>
+      <div class="form-group"><label>Favourite Areas</label><input id="p-areas" class="form-input" placeholder="e.g. Osu, East Legon" /></div>
+      <div class="form-group"><label>Favourite Genres</label><div id="genre-pref-grid" class="genre-pref-grid"></div></div>
+      <div class="form-group">
+        <label>Notify me via</label>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;">
+          <button class="notify-btn active" data-val="email" onclick="selectNotify(this)">✉️ Email</button>
+          <button class="notify-btn" data-val="whatsapp" onclick="selectNotify(this)">💬 WhatsApp</button>
+          <button class="notify-btn" data-val="both" onclick="selectNotify(this)">Both</button>
+        </div>
+      </div>
+      <button class="btn-submit" onclick="submitPatron()">🔔 Subscribe to Weekly Alerts</button>
+    </div>
+  </div>
+  <div id="patron-unlocked" style="display:none;">
+    <div style="padding:1.5rem;">
+      <div class="section-header">
+        <div class="section-title">👥 Alert Subscribers</div>
+        <div class="section-count" id="patron-count"></div>
+      </div>
+      <div id="patrons-summary" style="margin-bottom:1rem;font-size:.82rem;color:var(--text-muted);"></div>
+      <table style="width:100%;border-collapse:collapse;font-size:.82rem;" id="patron-tbody"></table>
+      <div style="margin-top:2rem;">
+        <div class="section-title" style="margin-bottom:.75rem;">📅 Reservations</div>
+        <div class="section-count" id="res-count" style="margin-bottom:.75rem;"></div>
+        <table style="width:100%;border-collapse:collapse;font-size:.82rem;" id="res-tbody"></table>
+      </div>
+      <div style="margin-top:2rem;">
+        <button class="btn-submit" onclick="previewDigest()" style="background:rgba(212,160,23,.15);color:var(--gold);border:1px solid rgba(212,160,23,.3);">📧 Preview Weekly Digest</button>
+        <div id="digest-rows" style="margin-top:1rem;font-size:.82rem;"></div>
+      </div>
+    </div>
+  </div>
+</main>
 
 <!-- Post Gig -->
 <div class="modal-overlay" id="gigModal">
@@ -5094,11 +5183,6 @@ if (isIOS() && !isInStandaloneMode() && !sessionStorage.getItem('pwaDismissed'))
   document.getElementById('pwaBanner').classList.add('visible');
 }
 
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(()=>{});
-  });
-}
 // Manifest served as /manifest.json
 
 // ── VISITOR COUNTER ──
