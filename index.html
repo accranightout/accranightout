@@ -321,8 +321,7 @@
 <script src="https://js.paystack.co/v1/inline.js" defer></script>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&f[]=satoshi@400,500,700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" media="print" onload="this.media='all'" />
-<noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" /></noscript>
+
 <style>
   :root {
     --gold: #D4A017;
@@ -4558,7 +4557,6 @@ function showTab(tab) {
     renderEvents();
   } else if (tab==='bars') {
     doSearch();
-    setTimeout(() => initBarMap(), 150);
   } else {
     doSearch();
   }
@@ -4567,14 +4565,7 @@ function showTab(tab) {
 // ── MODALS ──
 function openModal(id) {
   document.body.classList.add('modal-open');
-  if (barMap) {
-    barMap.dragging.disable();
-    barMap.scrollWheelZoom.disable();
-    barMap.touchZoom.disable();
-    barMap.doubleClickZoom.disable();
-    barMap.boxZoom.disable();
-    barMap.keyboard.disable();
-  }
+
 
   if (id==='gigModal') populateGigSelects();
   if (id==='patronModal') buildGenrePrefGrid();
@@ -4585,15 +4576,7 @@ function closeModal(id) {
   document.getElementById(id).classList.remove('open');
   document.body.classList.remove('modal-open');
 
-  if (barMap) {
-    barMap.dragging.enable();
-    barMap.scrollWheelZoom.enable();
-    barMap.touchZoom.enable();
-    barMap.doubleClickZoom.enable();
-    barMap.boxZoom.enable();
-    barMap.keyboard.enable();
-    barMap.invalidateSize();
-  }
+
 }
 document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if(e.target===el) el.classList.remove('open'); });
@@ -5367,80 +5350,8 @@ function buildFlashTicker() {
 }
 
 // ── BAR MAP ──
-let barMap = null;
-let barMarkers = [];
 
-async function loadLeaflet() {
-  if (window.L) return;
-  await new Promise((res, rej) => {
-    const s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
-    s.onload = res; s.onerror = rej;
-    document.head.appendChild(s);
-  });
-}
 
-async function initBarMap() {
-  await loadLeaflet();
-  if (barMap) {
-    setTimeout(() => barMap.invalidateSize(), 100);
-    return;
-  }
-
-  
-  const mapEl = document.getElementById('barMap');
-  if (mapEl) mapEl.style.height = '380px';
-
-  barMap = L.map('barMap', { zoomControl: true, scrollWheelZoom: false });
-
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '© OpenStreetMap © CARTO', subdomains: 'abcd', maxZoom: 19
-  }).addTo(barMap);
-
-  const goldIcon = L.divIcon({ className: '',
-    html: `<div style="width:36px;height:36px;border-radius:50% 50% 50% 0;background:#D4A017;border:3px solid #fff;transform:rotate(-45deg);box-shadow:0 3px 10px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;"><div style="transform:rotate(45deg);font-size:14px;">🍻</div></div>`,
-    iconSize:[36,36], iconAnchor:[18,36], popupAnchor:[0,-38] });
-
-  const eventIcon = L.divIcon({ className: '',
-    html: `<div style="width:32px;height:32px;border-radius:50% 50% 50% 0;background:#C0392B;border:3px solid #fff;transform:rotate(-45deg);box-shadow:0 3px 10px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;"><div style="transform:rotate(45deg);font-size:13px;">🎟️</div></div>`,
-    iconSize:[32,32], iconAnchor:[16,32], popupAnchor:[0,-34] });
-
-  const allMarkers = [];
-
-  
-  bars.forEach(bar => {
-    const upcoming = gigs.filter(g => g.barId===bar.id && new Date(g.date)>=new Date()).length;
-    const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${bar.lat},${bar.lng}&travelmode=driving`;
-    const popup = L.popup({ maxWidth:240 }).setContent(`<div class="map-popup"><div class="map-popup-name">${bar.name}</div><div class="map-popup-area">📍 ${bar.area}, Accra</div><div class="map-popup-phone">📞 ${bar.phone}</div>${upcoming?`<div style="font-size:.75rem;color:#2FA869;margin-bottom:6px;">🎵 ${upcoming} upcoming gig${upcoming!==1?'s':''}</div>`:''}<a class="map-popup-nav" href="${navUrl}" target="_blank">🧭 Get Turn-by-Turn Directions</a></div>`);
-    const marker = L.marker([bar.lat, bar.lng], { icon: goldIcon }).addTo(barMap).bindPopup(popup);
-    marker.on('click', () => barMap.flyTo([bar.lat, bar.lng], 16, { duration: 1.2 }));
-    barMarkers.push({ barId: bar.id, marker });
-    allMarkers.push(marker);
-  });
-
-  
-  events.filter(ev => ev.lat && ev.lng).forEach(ev => {
-    const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${ev.lat},${ev.lng}&travelmode=driving`;
-    const priceStr = ev.price===0 ? 'Free Entry' : `GHS ${ev.price}`;
-    const popup = L.popup({ maxWidth:240 }).setContent(`<div class="map-popup"><div class="map-popup-name">${ev.title}</div><div class="map-popup-area">📍 ${ev.venue}</div><div class="map-popup-phone">📅 ${formatEventDate(ev.date)} · 🕐 ${formatTime(ev.time)}</div><div style="font-size:.75rem;color:#2FA869;margin-bottom:6px;">${priceStr}</div><a class="map-popup-nav" href="${navUrl}" target="_blank">🧭 Get Turn-by-Turn Directions</a></div>`);
-    const marker = L.marker([ev.lat, ev.lng], { icon: eventIcon }).addTo(barMap).bindPopup(popup);
-    marker.on('click', () => barMap.flyTo([ev.lat, ev.lng], 16, { duration: 1.2 }));
-    allMarkers.push(marker);
-  });
-
-  
-  if (allMarkers.length) {
-    const group = L.featureGroup(allMarkers);
-    barMap.fitBounds(group.getBounds().pad(0.05));
-  }
-
-  setTimeout(() => barMap.invalidateSize(), 200);
-
-  
-  const legend = L.control({ position: 'bottomleft' });
-  legend.onAdd = () => { const div = L.DomUtil.create('div'); div.innerHTML = `<div style="background:rgba(13,13,13,.85);padding:8px 12px;border-radius:8px;font-size:.72rem;color:#fff;font-family:sans-serif;line-height:1.8;">🍻 <span style="color:#D4A017;">Bar / Venue</span><br/>🎟️ <span style="color:#e67e73;">Event</span></div>`; return div; };
-  legend.addTo(barMap);
-}
 
 // ── PWA INSTALL ──
 let deferredPrompt = null;
