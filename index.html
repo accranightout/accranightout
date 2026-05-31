@@ -3912,6 +3912,7 @@ function getConcurrentSiblings(g) {
 
 function renderGigs(list) {
   const grid = document.getElementById('gigs-grid');
+  if (!grid) return;
   if (!list.length) { grid.innerHTML = '<div class="empty"><div class="empty-icon">🎵</div><p>No gigs found.</p></div>'; return; }
   grid.innerHTML = list.map(g => {
     const band = getBand(g.bandId), bar = getBar(g.barId);
@@ -3998,6 +3999,7 @@ function renderGigs(list) {
 // ── RENDER BARS ──
 function renderBars(list) {
   const grid = document.getElementById('bars-grid');
+  if (!grid) return;
   if (!list.length) { grid.innerHTML = '<div class="empty"><div class="empty-icon">🍻</div><p>No bars found.</p></div>'; return; }
   grid.innerHTML = list.map(bar => {
     const upcoming = gigs.filter(g=>g.barId===bar.id && new Date(g.date)>=new Date()).length;
@@ -4138,6 +4140,7 @@ function submitRating() {
 
 function renderLeaderboard() {
   const lb = document.getElementById('band-leaderboard');
+  if (!lb) return;
   const ranked = bands
     .map(b => ({ band: b, rating: getBandAvgRating(b.id) }))
     .filter(x => x.rating)
@@ -4168,6 +4171,7 @@ function renderLeaderboard() {
 // ── RENDER BANDS ──
 function renderBands(list) {
   const grid = document.getElementById('bands-grid');
+  if (!grid) return;
   if (!list.length) { grid.innerHTML = '<div class="empty"><div class="empty-icon">🎸</div><p>No bands found.</p></div>'; return; }
   grid.innerHTML = list.map(band => {
     const upcoming = gigs.filter(g=>g.bandId===band.id && new Date(g.date)>=new Date()).length;
@@ -4398,8 +4402,8 @@ document.querySelectorAll('.modal-overlay').forEach(el => {
 });
 
 function populateGigSelects() {
-  document.getElementById('g-band').innerHTML = '<option value="">Select band…</option>' + bands.map(b=>`<option value="${b.id}">${b.name}</option>`).join('');
-  document.getElementById('g-bar').innerHTML = '<option value="">Select bar…</option>' + bars.map(b=>`<option value="${b.id}">${b.name}</option>`).join('');
+  const gb = document.getElementById('g-band'); if(gb) gb.innerHTML = '<option value="">Select band…</option>' + bands.map(b=>`<option value="${b.id}">${b.name}</option>`).join('');
+  const gbr = document.getElementById('g-bar'); if(gbr) gbr.innerHTML = '<option value="">Select bar…</option>' + bars.map(b=>`<option value="${b.id}">${b.name}</option>`).join('');
 }
 
 // ── SUBMIT HANDLERS ──
