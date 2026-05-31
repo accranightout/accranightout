@@ -24,6 +24,7 @@
 <meta name="twitter:title" content="AccraNightOut — Find Live Music in Accra" />
 <meta name="twitter:description" content="Find live bands, book tables and get weekly gig alerts in Accra, Ghana." />
 <link rel="apple-touch-icon" href="logo.png" />
+<link rel="manifest" href="/manifest.json" />
 <link rel="icon" type="image/png" href="logo.png" />
 
 <script type="application/ld+json">
@@ -689,8 +690,8 @@
     -webkit-transform: translateZ(0);
   }
   .modal-overlay.open { display: flex; }
-  body.modal-open .map-section { display: none !important; }
   body.modal-open { overflow: hidden !important; }
+  .modal-overlay.open { display: flex; }
   .modal {
     background: var(--off-black);
     border: 1px solid var(--dark-border);
@@ -2538,6 +2539,10 @@
     <div class="section-count" id="bar-count"></div>
   </div>
 
+
+
+  <div class="cards-grid" id="bars-grid"></div>
+
   <!-- Bar Map -->
   <div class="map-section">
     <div class="map-section-header">
@@ -2546,8 +2551,6 @@
     </div>
     <div id="barMap"></div>
   </div>
-
-  <div class="cards-grid" id="bars-grid"></div>
 </main>
 
 <!-- ── BANDS TAB ── -->
@@ -4556,6 +4559,15 @@ function showTab(tab) {
 // ── MODALS ──
 function openModal(id) {
   document.body.classList.add('modal-open');
+  if (barMap) {
+    barMap.dragging.disable();
+    barMap.scrollWheelZoom.disable();
+    barMap.touchZoom.disable();
+    barMap.doubleClickZoom.disable();
+    barMap.boxZoom.disable();
+    barMap.keyboard.disable();
+    barMap.getContainer().style.zIndex = '-1';
+  }
   if (id==='gigModal') populateGigSelects();
   if (id==='patronModal') buildGenrePrefGrid();
   if (id==='playlistModal') populatePlaylistSelects();
@@ -4564,7 +4576,16 @@ function openModal(id) {
 function closeModal(id) {
   document.getElementById(id).classList.remove('open');
   document.body.classList.remove('modal-open');
-  if (barMap) setTimeout(() => barMap.invalidateSize(), 50);
+  if (barMap) {
+    barMap.dragging.enable();
+    barMap.scrollWheelZoom.enable();
+    barMap.touchZoom.enable();
+    barMap.doubleClickZoom.enable();
+    barMap.boxZoom.enable();
+    barMap.keyboard.enable();
+    barMap.getContainer().style.zIndex = '';
+    barMap.invalidateSize();
+  }
 }
 document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if(e.target===el) el.classList.remove('open'); });
@@ -5480,24 +5501,7 @@ self.addEventListener('fetch', e => {
   });
 }
 
-const manifest = {
-  name: "Accra Night Out",
-  short_name: "AccraNightOut",
-  description: "Find live bands, book tables and get gig alerts in Accra",
-  start_url: "/",
-  display: "standalone",
-  background_color: "#0D0D0D",
-  theme_color: "#0D0D0D",
-  orientation: "portrait",
-  icons: [
-    { src: "logo.png", sizes: "512x512", type: "image/png", purpose: "any maskable" }
-  ]
-};
-const mBlob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
-const mUrl = URL.createObjectURL(mBlob);
-const mLink = document.createElement('link');
-mLink.rel = 'manifest'; mLink.href = mUrl;
-document.head.appendChild(mLink);
+// Manifest served as /manifest.json
 
 // ── VISITOR COUNTER ──
 function initVisitorCounter() {
