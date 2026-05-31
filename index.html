@@ -4192,7 +4192,9 @@ function updateStats() {
 // ── TABS ──
 function showTab(tab) {
   document.querySelectorAll('.main').forEach(el => el.classList.remove('active'));
-  document.getElementById('tab-'+tab).classList.add('active');
+  const tabEl = document.getElementById('tab-'+tab);
+  if (!tabEl) return;
+  tabEl.classList.add('active');
   document.querySelectorAll('.nav-tab').forEach((el,i) => {
     el.classList.toggle('active', ['gigs','bars','bands','events','editorial','patrons'][i]===tab);
   });
