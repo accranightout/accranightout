@@ -3270,8 +3270,9 @@ function renderEditorial() {
 
 // ── ARTICLE DETAIL PAGE ──
 function showArticlePage(article) {
-  document.getElementById('app-shell').style.display = 'none';
+  const _shell = document.getElementById('app-shell'); if(_shell) _shell.style.display = 'none';
   const dp = document.getElementById('detail-page');
+  if(!dp) return;
   dp.style.display = 'block';
 
   const relatedBars = (article.relatedBarIds||[]).map(id => bars.find(b=>b.id===id)).filter(Boolean);
@@ -3470,8 +3471,9 @@ function showBarPage(bar) {
   const past = gigs.filter(g => g.barId===bar.id && new Date(g.date)<new Date()).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
   const resCount = reservations.filter(r=>r.barId===bar.id).length;
 
-  document.getElementById('app-shell').style.display = 'none';
+  const _shell = document.getElementById('app-shell'); if(_shell) _shell.style.display = 'none';
   const dp = document.getElementById('detail-page');
+  if(!dp) return;
   dp.style.display = 'block';
   dp.innerHTML = `
     <div style="max-width:800px;margin:0 auto;padding:1.5rem 1.5rem 4rem;">
@@ -3580,8 +3582,9 @@ function showBandPage(band) {
   const r = getBandAvgRating(band.id);
   const bandRatings = ratings[band.id] || [];
 
-  document.getElementById('app-shell').style.display = 'none';
+  const _shell = document.getElementById('app-shell'); if(_shell) _shell.style.display = 'none';
   const dp = document.getElementById('detail-page');
+  if(!dp) return;
   dp.style.display = 'block';
   dp.innerHTML = `
     <div style="max-width:800px;margin:0 auto;padding:1.5rem 1.5rem 4rem;">
@@ -3660,8 +3663,9 @@ function showGigPage(gig) {
   const {day,mon} = formatDate(gig.date);
   const price = gig.price ? `GHS ${gig.price}` : 'Free Entry';
 
-  document.getElementById('app-shell').style.display = 'none';
+  const _shell = document.getElementById('app-shell'); if(_shell) _shell.style.display = 'none';
   const dp = document.getElementById('detail-page');
+  if(!dp) return;
   dp.style.display = 'block';
   dp.innerHTML = `
     <div style="max-width:800px;margin:0 auto;padding:1.5rem 1.5rem 4rem;">
@@ -3741,8 +3745,9 @@ function showGigPage(gig) {
 
 // ── EVENT DETAIL PAGE ──
 function showEventPage(ev) {
-  document.getElementById('app-shell').style.display = 'none';
+  const _shell = document.getElementById('app-shell'); if(_shell) _shell.style.display = 'none';
   const dp = document.getElementById('detail-page');
+  if(!dp) return;
   dp.style.display = 'block';
   const price = ev.price===0 ? 'Free Entry' : `GHS ${ev.price}`;
   dp.innerHTML = `
@@ -5326,8 +5331,8 @@ function previewDigest(){const html=generateDigestHtml();const win=window.open('
 
 // ── MEDIA KIT ──
 function showMediaKitPage(){
-  document.getElementById('app-shell').style.display='none';
-  const dp=document.getElementById('detail-page');
+  const _shell2=document.getElementById('app-shell'); if(_shell2) _shell2.style.display='none';
+  const dp=document.getElementById('detail-page'); if(!dp) return;
   dp.style.display='block';
   const stats=[
     ['Gigs listed',gigs.length+'+'],
@@ -5372,8 +5377,8 @@ function showMediaKitPage(){
   updateCanonical('https://accranightout.com/media-kit');
 }
 function showApiPage(){
-  document.getElementById('app-shell').style.display='none';
-  const dp=document.getElementById('detail-page');
+  const _shell2=document.getElementById('app-shell'); if(_shell2) _shell2.style.display='none';
+  const dp=document.getElementById('detail-page'); if(!dp) return;
   dp.style.display='block';
   const endpoints=[
     ['GET','/gigs?approved=eq.true&order=date.asc','All upcoming gigs'],
