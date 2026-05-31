@@ -682,7 +682,7 @@
   /* ── MODAL ── */
   .modal-overlay {
     display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,.75); z-index: 100;
+    background: rgba(0,0,0,.75); z-index: 2000;
     align-items: center; justify-content: center;
     padding: 1rem;
   }
@@ -1272,6 +1272,7 @@
     overflow: hidden;
     border: 1px solid var(--dark-border);
     position: relative;
+    z-index: 1;
   }
   .map-section-header {
     display: flex; align-items: center; justify-content: space-between;
@@ -1283,6 +1284,8 @@
   #barMap {
     height: 380px; width: 100%;
     background: #1a1a2e;
+    z-index: 1;
+    position: relative;
   }
   .map-popup {
     font-family:sans-serif;
@@ -4547,12 +4550,22 @@ function showTab(tab) {
 
 // ── MODALS ──
 function openModal(id) {
+  document.body.style.overflow = 'hidden';
+  if (barMap) { barMap.scrollWheelZoom.disable(); barMap.dragging.disable(); }
+  const mapEl = document.getElementById('barMap');
+  if (mapEl) mapEl.style.zIndex = '0';
   if (id==='gigModal') populateGigSelects();
   if (id==='patronModal') buildGenrePrefGrid();
   if (id==='playlistModal') populatePlaylistSelects();
   document.getElementById(id).classList.add('open');
 }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  document.body.style.overflow = '';
+  if (barMap) { barMap.scrollWheelZoom.enable(); barMap.dragging.enable(); }
+  const mapEl = document.getElementById('barMap');
+  if (mapEl) mapEl.style.zIndex = '';
+}
 document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if(e.target===el) el.classList.remove('open'); });
 });
@@ -5201,6 +5214,7 @@ function submitEvent() {
 
 // ── FLYER VIEWER ──
 function openFlyer(eventId) {
+  document.body.style.overflow = 'hidden';
   const ev = events.find(e => e.id === eventId);
   if (!ev) return;
   const safe = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
