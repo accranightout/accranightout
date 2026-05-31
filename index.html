@@ -4356,6 +4356,7 @@ function showTab(tab) {
     renderEvents();
   } else if (tab==='bars') {
     doSearch();
+    initBarMap().then(() => { if(barMap) setTimeout(() => barMap.invalidateSize(), 100); });
   } else {
     doSearch();
   }
