@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- AccraNightOut v20260531-024304 | STAGING PREVIEW -->
+<!-- AccraNightOut v20260531-024304 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
@@ -5144,12 +5144,17 @@ function buildHomeCarousel() {
   
   if (dotsEl) {
     dotsEl.innerHTML = carouselEvents.map((_,i) =>
-      `<div class="carousel-dot ${i===0?'active':''}" id="cdot-${i}"></div>`
+      `<div class="carousel-dot ${i===0?'active':''}" id="cdot-${i}" style="cursor:pointer"></div>`
     ).join('');
     carousel.addEventListener('scroll', () => {
       const idx = Math.round(carousel.scrollLeft / 276);
       dotsEl.querySelectorAll('.carousel-dot').forEach((d,i) => d.classList.toggle('active', i===idx));
     }, {passive:true});
+    dotsEl.querySelectorAll('.carousel-dot').forEach((dot, i) => {
+      dot.addEventListener('click', () => {
+        carousel.scrollTo({ left: i * 276, behavior: 'smooth' });
+      });
+    });
   }
 }
 
