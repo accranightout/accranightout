@@ -357,6 +357,7 @@
   body {
     background: var(--black);
     color: var(--text);
+    padding-bottom: 120px;
     font-family:sans-serif;
     min-height: 100vh;
     overflow-x: hidden;
@@ -5224,8 +5225,8 @@ window.addEventListener('beforeinstallprompt', e => {
     setTimeout(() => {
       const b = document.getElementById('pwaBanner');
       if(b) b.classList.add('visible');
-      setTimeout(() => dismissPwa(), 8000);
-    }, 3000);
+      setTimeout(() => dismissPwa(), 6000);
+    }, 2000);
   }
 });
 
@@ -5233,8 +5234,8 @@ if (isIOS() && !isInStandaloneMode() && !sessionStorage.getItem('pwaDismissed'))
   setTimeout(() => {
     const b = document.getElementById('pwaBanner');
     if(b) b.classList.add('visible');
-    setTimeout(() => dismissPwa(), 8000);
-  }, 3000);
+    setTimeout(() => dismissPwa(), 6000);
+  }, 2000);
 }
 
 // Manifest served as /manifest.json
