@@ -1644,7 +1644,7 @@
   .mob-tab.active svg { stroke: var(--gold); }
 
   @media (max-width: 768px) {
-    body { padding-bottom: 65px; }
+    body { padding-bottom: 160px; }
   }
 
   /* ── PER-TAB ACTION BARS ── */
@@ -5221,12 +5221,20 @@ window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   deferredPrompt = e;
   if (!isInStandaloneMode() && !sessionStorage.getItem('pwaDismissed')) {
-    document.getElementById('pwaBanner').classList.add('visible');
+    setTimeout(() => {
+      const b = document.getElementById('pwaBanner');
+      if(b) b.classList.add('visible');
+      setTimeout(() => dismissPwa(), 8000);
+    }, 3000);
   }
 });
 
 if (isIOS() && !isInStandaloneMode() && !sessionStorage.getItem('pwaDismissed')) {
-  document.getElementById('pwaBanner').classList.add('visible');
+  setTimeout(() => {
+    const b = document.getElementById('pwaBanner');
+    if(b) b.classList.add('visible');
+    setTimeout(() => dismissPwa(), 8000);
+  }, 3000);
 }
 
 // Manifest served as /manifest.json
