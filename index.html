@@ -357,6 +357,7 @@
   body {
     background: var(--black);
     color: var(--text);
+    padding-bottom: 120px;
     font-family:sans-serif;
     min-height: 100vh;
     overflow-x: hidden;
@@ -1644,7 +1645,7 @@
   .mob-tab.active svg { stroke: var(--gold); }
 
   @media (max-width: 768px) {
-    body { padding-bottom: 65px; }
+    body { padding-bottom: 160px; }
   }
 
   /* ── PER-TAB ACTION BARS ── */
@@ -5144,12 +5145,17 @@ function buildHomeCarousel() {
   
   if (dotsEl) {
     dotsEl.innerHTML = carouselEvents.map((_,i) =>
-      `<div class="carousel-dot ${i===0?'active':''}" id="cdot-${i}"></div>`
+      `<div class="carousel-dot ${i===0?'active':''}" id="cdot-${i}" style="cursor:pointer"></div>`
     ).join('');
     carousel.addEventListener('scroll', () => {
       const idx = Math.round(carousel.scrollLeft / 276);
       dotsEl.querySelectorAll('.carousel-dot').forEach((d,i) => d.classList.toggle('active', i===idx));
     }, {passive:true});
+    dotsEl.querySelectorAll('.carousel-dot').forEach((dot, i) => {
+      dot.addEventListener('click', () => {
+        carousel.scrollTo({ left: i * 276, behavior: 'smooth' });
+      });
+    });
   }
 }
 
@@ -5216,12 +5222,20 @@ window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   deferredPrompt = e;
   if (!isInStandaloneMode() && !sessionStorage.getItem('pwaDismissed')) {
-    document.getElementById('pwaBanner').classList.add('visible');
+    setTimeout(() => {
+      const b = document.getElementById('pwaBanner');
+      if(b) b.classList.add('visible');
+      setTimeout(() => dismissPwa(), 6000);
+    }, 2000);
   }
 });
 
 if (isIOS() && !isInStandaloneMode() && !sessionStorage.getItem('pwaDismissed')) {
-  document.getElementById('pwaBanner').classList.add('visible');
+  setTimeout(() => {
+    const b = document.getElementById('pwaBanner');
+    if(b) b.classList.add('visible');
+    setTimeout(() => dismissPwa(), 6000);
+  }, 2000);
 }
 
 // Manifest served as /manifest.json
@@ -5495,6 +5509,16 @@ loadAllData().then(() => { handleRoute(getRoute()); initPushPrompt(); });
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>
+
+<!-- Site Footer -->
+<footer class="site-footer" id="site-footer">
+  <div class="footer-links">
+    <a href="/terms">Terms of Service</a>
+    <a href="/privacy">Privacy Policy</a>
+    <a href="mailto:accranightout@gmail.com">Contact</a>
+  </div>
+  <div>&copy; 2024&ndash;2026 AccraNightOut &middot; Accra, Ghana &middot; All rights reserved</div>
+</footer>
 
 </body>
 </html>
