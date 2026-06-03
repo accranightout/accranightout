@@ -5551,11 +5551,11 @@ loadAllData().then(() => { handleRoute(getRoute()); initPushPrompt(); });
 #ano-chat-root * { box-sizing: border-box; margin: 0; padding: 0; }
 #ano-panel {
   display: none; flex-direction: column;
-  position: absolute; bottom: 68px; right: 0;
+  position: fixed; bottom: 90px; right: 20px;
   width: 320px; background: #1A1A1A;
   border: 1px solid #333; border-radius: 16px;
   box-shadow: 0 12px 40px rgba(0,0,0,.7);
-  overflow: hidden;
+  overflow: hidden; z-index: 2147483646;
 }
 #ano-panel.ano-open { display: flex; }
 #ano-header {
