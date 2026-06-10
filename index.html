@@ -5586,7 +5586,7 @@ async function submitFoodSpot() {
     approved:false
   };
   const r=await sbFetch('food_places',{insert:data});
-  if(r&&r[0]){closeModal('foodModal');showToast('🍲 Food spot submitted! We'll review it shortly.');}
+  if(r&&r[0]){closeModal('foodModal');showToast('🍲 Food spot submitted! We\'ll review it shortly.');}
   else showToast('Submission failed. Please try again.');
 }
 
