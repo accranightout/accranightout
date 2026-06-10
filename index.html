@@ -5479,7 +5479,7 @@ let foodPlaces = [];
 let foodMap = null, foodMapMarkers = [];
 
 async function fetchFoodPlaces() {
-  const r = await sbFetch('food_places?select=*&order=name.asc&approved=eq.true');
+  const r = await sb('food_places', {filters:['approved=eq.true'], order:'name.asc'});
   foodPlaces = Array.isArray(r) ? r : [];
 }
 
@@ -5521,6 +5521,7 @@ function renderFood(list) {
 async function initFoodMap() {
   if (foodMap) { setTimeout(()=>foodMap.invalidateSize(),100); return; }
   if (!document.getElementById('foodMap')) return;
+  if (typeof L === 'undefined') { setTimeout(initFoodMap, 500); return; }
   foodMap = L.map('foodMap',{zoomControl:true}).setView([5.56,-0.20],12);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
     attribution:'© OpenStreetMap © CARTO', maxZoom:19
@@ -5585,7 +5586,7 @@ async function submitFoodSpot() {
     description:document.getElementById('fn-desc').value.trim(),
     approved:false
   };
-  const r=await sbFetch('food_places',{insert:data});
+  const r=await sb('food_places',{insert:data});
   if(r&&r[0]){closeModal('foodModal');showToast('🍲 Food spot submitted! We\'ll review it shortly.');}
   else showToast('Submission failed. Please try again.');
 }
