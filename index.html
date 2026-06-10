@@ -706,6 +706,9 @@
     font-size: .9rem; font-weight: 700;
   }
   #barMap { height: 380px; width: 100%; background: #1a1a2e; }
+  #foodMap { height: 380px; width: 100%; background: #1a1a2e; }
+  @media (max-width: 768px) { #foodMap { height: 260px; } }
+
   .map-popup { min-width: 200px; }
   .map-popup-name { font-weight: 700; font-size: .95rem; color: #0d0d0d; margin-bottom: 4px; }
   .map-popup-area { font-size: .78rem; color: #555; margin-bottom: 6px; }
@@ -2413,6 +2416,7 @@
     <div class="nav-tabs">
       <button class="nav-tab active" onclick="navigate('/')">Gigs</button>
       <button class="nav-tab" onclick="navigate('/bars')">Bars</button>
+      <button class="nav-tab" onclick="navigate('/food')">Food</button>
       <button class="nav-tab" onclick="navigate('/bands')">Bands</button>
       <button class="nav-tab" onclick="navigate('/events')">Events</button>
       <button class="nav-tab" onclick="navigate('/editorial')">Editorial</button>
@@ -2544,6 +2548,29 @@
     </button>
   </div>
 
+</main>
+
+
+<!-- ── FOOD TAB ── -->
+<main class="main" id="tab-food">
+  <div class="section-header">
+    <div class="section-title">🍲 Chop Bars & Food Spots</div>
+    <div class="section-count" id="food-count"></div>
+  </div>
+  <div class="cards-grid" id="food-grid"></div>
+  <!-- Food Map -->
+  <div class="map-section">
+    <div class="map-section-header">
+      <span>📍 Food Spot Locations — Click a pin to navigate</span>
+    </div>
+    <div id="foodMap"></div>
+  </div>
+  <div class="tab-actions" style="margin-top:1rem;">
+    <button class="reg-btn" onclick="openModal('foodModal')">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+      List Your Food Spot
+    </button>
+  </div>
 </main>
 
 <!-- ── BANDS TAB ── -->
@@ -3409,6 +3436,8 @@ function getRoute() {
   const parts = path.split('/').filter(Boolean);
   if (!parts.length) return { page: 'home' };
   if (parts[0]==='bars' && !parts[1]) return { page: 'tab', tab: 'bars' };
+  if (parts[0]==='food' && !parts[1]) return { page: 'tab', tab: 'food' };
+  if (parts[0]==='food' && parts[1]) return { page: 'food', slug: parts[1] };
   if (parts[0]==='bands' && !parts[1]) return { page: 'tab', tab: 'bands' };
   if (parts[0]==='events' && !parts[1]) return { page: 'tab', tab: 'events' };
   if (parts[0]==='bar' && parts[1]) return { page: 'bar', slug: parts[1] };
@@ -3445,6 +3474,10 @@ function handleRoute(route) {
     const bar = bars.find(b => slugify(b.name) === route.slug);
     if (bar) showBarPage(bar);
     else navigate('/', false);
+  } else if (route.page === 'food') {
+    const food = foodPlaces.find(f => slugify(f.name) === route.slug);
+    if (food) showFoodPage(food);
+    else navigate('/food', false);
   } else if (route.page === 'band') {
     const band = bands.find(b => slugify(b.name) === route.slug);
     if (band) showBandPage(band);
@@ -3852,6 +3885,7 @@ async function testSupabaseConnection() {
 }
 
 async function loadAllData(){
+  await fetchFoodPlaces();
   await testSupabaseConnection();
   showLoadingState();
   try{
@@ -3889,7 +3923,7 @@ initPushPrompt();
 }
 function showLoadingState(){
   const skeletons = '<div class="skeleton skeleton-card"></div>'.repeat(4);
-  ['gigs-grid','bars-grid','bands-grid'].forEach(id=>{
+  ['gigs-grid','bars-grid','food-grid','bands-grid'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;">${skeletons}</div>`;
   });
@@ -4366,6 +4400,11 @@ function showTab(tab) {
   } else if (tab==='bars') {
     doSearch();
     initBarMap().then(() => { if(barMap) setTimeout(() => barMap.invalidateSize(), 100); });
+  } else if (tab==='food') {
+    let q=document.getElementById('searchInput')?.value.trim().toLowerCase()||'';
+    let list=foodPlaces.filter(f=>!q||f.name.toLowerCase().includes(q)||f.area.toLowerCase().includes(q)||(f.dishes&&f.dishes.toLowerCase().includes(q)));
+    renderFood(list);
+    initFoodMap();
   } else {
     doSearch();
   }
@@ -5434,6 +5473,121 @@ function showApiPage(){
 }
 
 // Boot
+
+// ── FOOD SPOTS ──
+let foodPlaces = [];
+let foodMap = null, foodMapMarkers = [];
+
+async function fetchFoodPlaces() {
+  const r = await sbFetch('food_places?select=*&order=name.asc&approved=eq.true');
+  foodPlaces = Array.isArray(r) ? r : [];
+}
+
+function renderFood(list) {
+  const grid = document.getElementById('food-grid');
+  if (!grid) return;
+  if (!list.length) { grid.innerHTML = '<div class="empty"><div class="empty-icon">🍲</div><p>No food spots found. Be the first to list yours!</p></div>'; return; }
+  grid.innerHTML = list.map(f => `
+    <div class="bar-card" onclick="navigate('/food/${slugify(f.name)}')" style="cursor:pointer;">
+      <div class="bar-top">
+        <div class="bar-avatar" style="background:linear-gradient(135deg,#c0392b,#e74c3c);">${initials(f.name)}</div>
+        <div>
+          <div class="bar-name">${f.name}</div>
+          <div class="bar-area">${f.area}, Accra</div>
+        </div>
+      </div>
+      <div class="bar-details">
+        ${f.address ? `<div class="bar-detail"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${f.address}</div>` : ''}
+        ${f.phone ? `<div class="bar-detail"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.6 1.21h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 6.18 6.18l.96-.96a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 21.92 16.92z"/></svg><a href="tel:${f.phone}">${f.phone}</a></div>` : ''}
+        ${f.hours ? `<div class="bar-detail">🕐 ${f.hours}</div>` : ''}
+        ${f.dishes ? `<div class="bar-detail">🍽️ ${f.dishes}</div>` : ''}
+        ${f.price_range ? `<div class="bar-detail">💰 ${f.price_range==='budget'?'Budget (under GHS 30)':f.price_range==='mid'?'Mid-range (GHS 30–80)':'Premium (GHS 80+)'}</div>` : ''}
+      </div>
+      <div class="bar-actions">
+        <a class="btn-map" href="${mapUrl(f.lat,f.lng,f.name)}" target="_blank">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+          Get Directions
+        </a>
+        <button class="btn-map" onclick="event.stopPropagation();focusFoodOnMap(${f.id})" style="background:rgba(231,76,60,.12);border-color:rgba(231,76,60,.25);color:#e74c3c;">
+          📍 Show on Map
+        </button>
+      </div>
+    </div>`).join('');
+  document.getElementById('food-count').textContent = `${list.length} spot${list.length!==1?'s':''}`;
+}
+
+async function initFoodMap() {
+  if (foodMap) { setTimeout(()=>foodMap.invalidateSize(),100); return; }
+  if (!document.getElementById('foodMap')) return;
+  foodMap = L.map('foodMap',{zoomControl:true}).setView([5.56,-0.20],12);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+    attribution:'© OpenStreetMap © CARTO', maxZoom:19
+  }).addTo(foodMap);
+  foodMapMarkers = [];
+  foodPlaces.filter(f=>f.lat&&f.lng).forEach(f=>{
+    const icon = L.divIcon({className:'',html:`<div style="width:14px;height:14px;background:#e74c3c;border-radius:50%;border:2px solid rgba(255,255,255,0.5);"></div>`,iconSize:[14,14]});
+    const m = L.marker([f.lat,f.lng],{icon}).addTo(foodMap);
+    m.bindPopup(`<div style="font-family:sans-serif;font-size:13px;"><strong>${f.name}</strong><br/>${f.area}, Accra${f.dishes?'<br/>'+f.dishes:''}</div>`);
+    foodMapMarkers.push({id:f.id,marker:m});
+  });
+  setTimeout(()=>foodMap.invalidateSize(),100);
+}
+
+function focusFoodOnMap(id) {
+  const f = foodPlaces.find(p=>p.id===id);
+  if(f&&f.lat&&f.lng&&foodMap) foodMap.flyTo([f.lat,f.lng],16,{duration:1});
+}
+
+function showFoodPage(f) {
+  const _shell = document.getElementById('app-shell'); if(_shell) _shell.style.display='none';
+  const dp = document.getElementById('detail-page'); if(!dp) return;
+  dp.style.display='block';
+  dp.innerHTML = `
+    <div class="detail-back" onclick="navigate('/food')">← Back to Food</div>
+    <div class="detail-hero" style="background:linear-gradient(135deg,#c0392b,#7b241c);">
+      <div class="detail-avatar" style="background:rgba(255,255,255,0.15);">${initials(f.name)}</div>
+      <div class="detail-info">
+        <h1 class="detail-name">${f.name}</h1>
+        <div class="detail-area">🍲 Chop Bar · ${f.area}, Accra</div>
+        ${f.hours?`<div class="detail-meta">🕐 ${f.hours}</div>`:''}
+      </div>
+    </div>
+    <div class="detail-body">
+      ${f.address?`<div class="detail-row"><strong>📍 Address</strong><span>${f.address}</span></div>`:''}
+      ${f.phone?`<div class="detail-row"><strong>📞 Phone</strong><a href="tel:${f.phone}">${f.phone}</a></div>`:''}
+      ${f.dishes?`<div class="detail-row"><strong>🍽️ Dishes</strong><span>${f.dishes}</span></div>`:''}
+      ${f.price_range?`<div class="detail-row"><strong>💰 Price Range</strong><span>${f.price_range==='budget'?'Budget (under GHS 30)':f.price_range==='mid'?'Mid-range (GHS 30–80)':'Premium (GHS 80+)'}</span></div>`:''}
+      ${f.desc?`<div class="detail-row"><strong>About</strong><span>${f.desc}</span></div>`:''}
+      <div style="margin-top:1.5rem;display:flex;gap:.75rem;flex-wrap:wrap;">
+        ${f.lat&&f.lng?`<a class="btn-map" href="${mapUrl(f.lat,f.lng,f.name)}" target="_blank" style="text-decoration:none;"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg> Get Directions</a>`:''}
+        ${f.phone?`<a class="btn-map" href="tel:${f.phone}" style="text-decoration:none;">📞 Call Now</a>`:''}
+      </div>
+    </div>`;
+}
+
+async function submitFoodSpot() {
+  const name=document.getElementById('fn-name').value.trim();
+  const area=document.getElementById('fn-area').value;
+  const phone=document.getElementById('fn-phone').value.trim();
+  if(!name||!area||!phone){showToast('Please fill in Name, Area and Phone');return;}
+  const data={
+    name, area,
+    address:document.getElementById('fn-address').value.trim(),
+    gps:document.getElementById('fn-gps').value.trim(),
+    lat:parseFloat(document.getElementById('fn-lat').value)||null,
+    lng:parseFloat(document.getElementById('fn-lng').value)||null,
+    phone,
+    hours:document.getElementById('fn-hours').value.trim(),
+    dishes:document.getElementById('fn-dishes').value.trim(),
+    price_range:document.getElementById('fn-price').value,
+    desc:document.getElementById('fn-desc').value.trim(),
+    approved:false
+  };
+  const r=await sbFetch('food_places',{insert:data});
+  if(r&&r[0]){closeModal('foodModal');showToast('🍲 Food spot submitted! We'll review it shortly.');}
+  else showToast('Submission failed. Please try again.');
+}
+
 loadAllData().then(() => { handleRoute(getRoute()); initPushPrompt(); });
 
 
@@ -5450,6 +5604,7 @@ loadAllData().then(() => { handleRoute(getRoute()); initPushPrompt(); });
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       Bars
     </button>
+    <button class="mob-tab" id="mobtab-food" onclick="navigate('/food')"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg><span>Food</span></button>
     <button class="mob-tab" id="mobtab-bands" onclick="navigate('/bands')">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
       Bands
@@ -5550,6 +5705,52 @@ loadAllData().then(() => { handleRoute(getRoute()); initPushPrompt(); });
   <div class="chat-bubble" id="chatBubble" onclick="toggleChat()">
     <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
     <div class="chat-unread" id="chatUnread">1</div>
+  </div>
+</div>
+
+<!-- Food Registration Modal -->
+<div class="modal-overlay" id="foodModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🍲 List Your Food Spot</div>
+      <button class="modal-close" onclick="closeModal('foodModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Food Spot Name *</label><input id="fn-name" placeholder="e.g. Maame's Chop Bar"/></div>
+        <div class="form-group"><label>Area *</label>
+          <select id="fn-area">
+            <option value="">Select area…</option>
+            <option>East Legon</option><option>Osu</option><option>Labadi</option>
+            <option>Adabraka</option><option>Cantonments</option><option>Airport City</option>
+            <option>Labone</option><option>Ridge</option><option>Achimota</option>
+            <option>Madina</option><option>Tema</option><option>Dansoman</option>
+            <option>Kasoa</option><option>Spintex</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label>Address</label><input id="fn-address" placeholder="e.g. Behind Total Filling Station, Osu"/></div>
+      <div class="form-group"><label>Ghana Post GPS</label><input id="fn-gps" placeholder="e.g. GA-123-4567"/></div>
+      <div class="form-row">
+        <div class="form-group"><label>Latitude</label><input id="fn-lat" type="number" step="0.0001" placeholder="5.5502"/></div>
+        <div class="form-group"><label>Longitude</label><input id="fn-lng" type="number" step="0.0001" placeholder="-0.1969"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Phone *</label><input id="fn-phone" placeholder="+233 XX XXX XXXX"/></div>
+        <div class="form-group"><label>Opening Hours</label><input id="fn-hours" placeholder="e.g. 7am – 9pm"/></div>
+      </div>
+      <div class="form-group"><label>Speciality Dishes</label><input id="fn-dishes" placeholder="e.g. Fufu, Light Soup, Banku, Tilapia"/></div>
+      <div class="form-group"><label>Price Range</label>
+        <select id="fn-price">
+          <option value="">Select…</option>
+          <option value="budget">Budget (under GHS 30)</option>
+          <option value="mid">Mid-range (GHS 30–80)</option>
+          <option value="premium">Premium (GHS 80+)</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Description</label><textarea id="fn-desc" rows="3" placeholder="Tell people what makes your chop bar special…"></textarea></div>
+      <button class="submit-btn" onclick="submitFoodSpot()">Submit for Review</button>
+    </div>
   </div>
 </div>
 
