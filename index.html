@@ -706,6 +706,10 @@
     font-size: .9rem; font-weight: 700;
   }
   #barMap { height: 380px; width: 100%; background: #1a1a2e; }
+  #foodMap { height: 380px; width: 100%; background: #1a1a2e; }
+  #tab-food .map-section { display: none; }
+  @media (max-width: 768px) { #foodMap { height: 260px; } }
+
   .map-popup { min-width: 200px; }
   .map-popup-name { font-weight: 700; font-size: .95rem; color: #0d0d0d; margin-bottom: 4px; }
   .map-popup-area { font-size: .78rem; color: #555; margin-bottom: 6px; }
@@ -2413,6 +2417,7 @@
     <div class="nav-tabs">
       <button class="nav-tab active" onclick="navigate('/')">Gigs</button>
       <button class="nav-tab" onclick="navigate('/bars')">Bars</button>
+      <button class="nav-tab" onclick="navigate('/food')">Food</button>
       <button class="nav-tab" onclick="navigate('/bands')">Bands</button>
       <button class="nav-tab" onclick="navigate('/events')">Events</button>
       <button class="nav-tab" onclick="navigate('/editorial')">Editorial</button>
@@ -2433,8 +2438,8 @@
         <span style="font-size:.8rem;color:var(--text-muted);">Accra, Ghana</span>
         <span class="visitor-counter"><span class="visitor-dot"></span><strong id="visitor-count">—</strong> visitors</span>
       </div>
-      <h1>Find Live Music<br/>in <span class="accent">Accra</span> Tonight</h1>
-      <p class="hero-sub">Discover which band is playing, at which bar, and when. Register your band or list your venue to be found.</p>
+      <h1>Find Live Music & Food<br/>in <span class="accent">Accra</span> Tonight</h1>
+      <p class="hero-sub">Discover live bands, partner bars, and the best local chop bars in Accra. Register your band, list your venue or food spot to be found.</p>
     </div>
     <div class="hero-stats" id="hero-stats">
       <div>
@@ -2544,6 +2549,29 @@
     </button>
   </div>
 
+</main>
+
+
+<!-- ── FOOD TAB ── -->
+<main class="main" id="tab-food">
+  <div class="section-header">
+    <div class="section-title">🍲 Chop Bars & Food Spots</div>
+    <div class="section-count" id="food-count"></div>
+  </div>
+  <div class="cards-grid" id="food-grid"></div>
+  <!-- Food Map -->
+  <div class="map-section">
+    <div class="map-section-header">
+      <span>📍 Food Spot Locations — Click a pin to navigate</span>
+    </div>
+    <div id="foodMap"></div>
+  </div>
+  <div class="tab-actions" style="margin-top:1rem;">
+    <button class="reg-btn" onclick="openModal('foodModal')">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+      List Your Food Spot
+    </button>
+  </div>
 </main>
 
 <!-- ── BANDS TAB ── -->
@@ -3409,6 +3437,8 @@ function getRoute() {
   const parts = path.split('/').filter(Boolean);
   if (!parts.length) return { page: 'home' };
   if (parts[0]==='bars' && !parts[1]) return { page: 'tab', tab: 'bars' };
+  if (parts[0]==='food' && !parts[1]) return { page: 'tab', tab: 'food' };
+  if (parts[0]==='food' && parts[1]) return { page: 'food', slug: parts[1] };
   if (parts[0]==='bands' && !parts[1]) return { page: 'tab', tab: 'bands' };
   if (parts[0]==='events' && !parts[1]) return { page: 'tab', tab: 'events' };
   if (parts[0]==='bar' && parts[1]) return { page: 'bar', slug: parts[1] };
@@ -3445,6 +3475,10 @@ function handleRoute(route) {
     const bar = bars.find(b => slugify(b.name) === route.slug);
     if (bar) showBarPage(bar);
     else navigate('/', false);
+  } else if (route.page === 'food') {
+    const food = foodPlaces.find(f => slugify(f.name) === route.slug);
+    if (food) showFoodPage(food);
+    else navigate('/food', false);
   } else if (route.page === 'band') {
     const band = bands.find(b => slugify(b.name) === route.slug);
     if (band) showBandPage(band);
@@ -3852,6 +3886,7 @@ async function testSupabaseConnection() {
 }
 
 async function loadAllData(){
+  await fetchFoodPlaces();
   await testSupabaseConnection();
   showLoadingState();
   try{
@@ -3889,7 +3924,7 @@ initPushPrompt();
 }
 function showLoadingState(){
   const skeletons = '<div class="skeleton skeleton-card"></div>'.repeat(4);
-  ['gigs-grid','bars-grid','bands-grid'].forEach(id=>{
+  ['gigs-grid','bars-grid','food-grid','bands-grid'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;">${skeletons}</div>`;
   });
@@ -4053,6 +4088,8 @@ function renderBars(list) {
     </div>`;
   }).join('');
   document.getElementById('bar-count').textContent = `${list.length} venue${list.length!==1?'s':''}`;
+  const barMapSection = document.querySelector('#tab-bars .map-section');
+  if (barMapSection) barMapSection.style.display = list.filter(b=>b.lat&&b.lng).length ? 'block' : 'none';
 }
 
 // ── RATING DATA ──
@@ -4366,6 +4403,11 @@ function showTab(tab) {
   } else if (tab==='bars') {
     doSearch();
     initBarMap().then(() => { if(barMap) setTimeout(() => barMap.invalidateSize(), 100); });
+  } else if (tab==='food') {
+    let q=document.getElementById('searchInput')?.value.trim().toLowerCase()||'';
+    let list=foodPlaces.filter(f=>!q||f.name.toLowerCase().includes(q)||f.area.toLowerCase().includes(q)||(f.dishes&&f.dishes.toLowerCase().includes(q)));
+    renderFood(list);
+    initFoodMap();
   } else {
     doSearch();
   }
@@ -5434,6 +5476,127 @@ function showApiPage(){
 }
 
 // Boot
+
+// ── FOOD SPOTS ──
+let foodPlaces = [];
+let foodMap = null, foodMapMarkers = [];
+
+async function fetchFoodPlaces() {
+  const r = await sb('food_places', {filters:['approved=eq.true'], order:'name.asc'});
+  foodPlaces = Array.isArray(r) ? r : [];
+}
+
+function renderFood(list) {
+  const grid = document.getElementById('food-grid');
+  if (!grid) return;
+  if (!list.length) {
+    grid.innerHTML = '<div class="empty"><div class="empty-icon">🍲</div><p>No food spots found. Be the first to list yours!</p></div>';
+    return;
+  }
+  grid.innerHTML = list.map(f => {
+    const priceLabel = f.price_range === 'budget' ? 'Budget (under GHS 30)' : f.price_range === 'mid' ? 'Mid-range (GHS 30–80)' : f.price_range === 'premium' ? 'Premium (GHS 80+)' : '';
+    return '<div class="bar-card food-card" data-slug="' + slugify(f.name) + '" data-id="' + f.id + '" style="cursor:pointer;">' +
+      '<div class="bar-top">' +
+        '<div class="bar-avatar" style="background:linear-gradient(135deg,#c0392b,#e74c3c);">' + initials(f.name) + '</div>' +
+        '<div><div class="bar-name">' + f.name + '</div><div class="bar-area">' + f.area + ', Accra</div></div>' +
+      '</div>' +
+      '<div class="bar-details">' +
+        (f.address ? '<div class="bar-detail">📍 ' + f.address + '</div>' : '') +
+        (f.phone ? '<div class="bar-detail">📞 <a href="tel:' + f.phone + '">' + f.phone + '</a></div>' : '') +
+        (f.hours ? '<div class="bar-detail">🕐 ' + f.hours + '</div>' : '') +
+        (f.dishes ? '<div class="bar-detail">🍽️ ' + f.dishes + '</div>' : '') +
+        (priceLabel ? '<div class="bar-detail">💰 ' + priceLabel + '</div>' : '') +
+      '</div>' +
+      '<div class="bar-actions">' +
+        (f.lat && f.lng ? '<a class="btn-map" href="' + mapUrl(f.lat, f.lng, f.name) + '" target="_blank" onclick="event.stopPropagation()">📍 Get Directions</a>' : '') +
+        '<button class="btn-map" onclick="event.stopPropagation();focusFoodOnMap(' + f.id + ')" style="background:rgba(231,76,60,.12);border-color:rgba(231,76,60,.25);color:#e74c3c;">🗺️ Show on Map</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  // Add click handlers
+  grid.querySelectorAll('.food-card').forEach(card => {
+    card.addEventListener('click', function() { navigate('/food/' + this.dataset.slug); });
+  });
+  const countEl = document.getElementById('food-count');
+  if (countEl) countEl.textContent = list.length + ' spot' + (list.length !== 1 ? 's' : '');
+  // Hide map if no places with coordinates
+  const mapSection = document.querySelector('#tab-food .map-section');
+  if (mapSection) mapSection.style.display = list.filter(f=>f.lat&&f.lng).length ? 'block' : 'none';
+}
+
+async function initFoodMap() {
+  if (foodMap) { setTimeout(()=>foodMap.invalidateSize(),100); return; }
+  if (!document.getElementById('foodMap')) return;
+  if (typeof L === 'undefined') { setTimeout(initFoodMap, 500); return; }
+  foodMap = L.map('foodMap',{zoomControl:true}).setView([5.56,-0.20],12);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+    attribution:'© OpenStreetMap © CARTO', maxZoom:19
+  }).addTo(foodMap);
+  foodMapMarkers = [];
+  foodPlaces.filter(f=>f.lat&&f.lng).forEach(f=>{
+    const icon = L.divIcon({className:'',html:`<div style="width:14px;height:14px;background:#e74c3c;border-radius:50%;border:2px solid rgba(255,255,255,0.5);"></div>`,iconSize:[14,14]});
+    const m = L.marker([f.lat,f.lng],{icon}).addTo(foodMap);
+    m.bindPopup(`<div style="font-family:sans-serif;font-size:13px;"><strong>${f.name}</strong><br/>${f.area}, Accra${f.dishes?'<br/>'+f.dishes:''}</div>`);
+    foodMapMarkers.push({id:f.id,marker:m});
+  });
+  setTimeout(()=>foodMap.invalidateSize(),100);
+}
+
+function focusFoodOnMap(id) {
+  const f = foodPlaces.find(p=>p.id===id);
+  if(f&&f.lat&&f.lng&&foodMap) foodMap.flyTo([f.lat,f.lng],16,{duration:1});
+}
+
+function showFoodPage(f) {
+  const _shell = document.getElementById('app-shell'); if(_shell) _shell.style.display='none';
+  const dp = document.getElementById('detail-page'); if(!dp) return;
+  dp.style.display='block';
+  dp.innerHTML = `
+    <div class="detail-back" onclick="navigate('/food')">← Back to Food</div>
+    <div class="detail-hero" style="background:linear-gradient(135deg,#c0392b,#7b241c);">
+      <div class="detail-avatar" style="background:rgba(255,255,255,0.15);">${initials(f.name)}</div>
+      <div class="detail-info">
+        <h1 class="detail-name">${f.name}</h1>
+        <div class="detail-area">🍲 Chop Bar · ${f.area}, Accra</div>
+        ${f.hours?`<div class="detail-meta">🕐 ${f.hours}</div>`:''}
+      </div>
+    </div>
+    <div class="detail-body">
+      ${f.address?`<div class="detail-row"><strong>📍 Address</strong><span>${f.address}</span></div>`:''}
+      ${f.phone?`<div class="detail-row"><strong>📞 Phone</strong><a href="tel:${f.phone}">${f.phone}</a></div>`:''}
+      ${f.dishes?`<div class="detail-row"><strong>🍽️ Dishes</strong><span>${f.dishes}</span></div>`:''}
+      ${f.price_range?`<div class="detail-row"><strong>💰 Price Range</strong><span>${f.price_range==='budget'?'Budget (under GHS 30)':f.price_range==='mid'?'Mid-range (GHS 30–80)':'Premium (GHS 80+)'}</span></div>`:''}
+      ${f.description?`<div class="detail-row"><strong>About</strong><span>${f.description}</span></div>`:''}
+      <div style="margin-top:1.5rem;display:flex;gap:.75rem;flex-wrap:wrap;">
+        ${f.lat&&f.lng?`<a class="btn-map" href="${mapUrl(f.lat,f.lng,f.name)}" target="_blank" style="text-decoration:none;"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg> Get Directions</a>`:''}
+        ${f.phone?`<a class="btn-map" href="tel:${f.phone}" style="text-decoration:none;">📞 Call Now</a>`:''}
+      </div>
+    </div>`;
+}
+
+async function submitFoodSpot() {
+  const name=document.getElementById('fn-name').value.trim();
+  const area=document.getElementById('fn-area').value;
+  const phone=document.getElementById('fn-phone').value.trim();
+  if(!name||!area||!phone){showToast('Please fill in Name, Area and Phone');return;}
+  const data={
+    name, area,
+    address:document.getElementById('fn-address').value.trim(),
+    gps:document.getElementById('fn-gps').value.trim(),
+    lat:parseFloat(document.getElementById('fn-lat').value)||null,
+    lng:parseFloat(document.getElementById('fn-lng').value)||null,
+    phone,
+    hours:document.getElementById('fn-hours').value.trim(),
+    dishes:document.getElementById('fn-dishes').value.trim(),
+    price_range:document.getElementById('fn-price').value,
+    description:document.getElementById('fn-desc').value.trim(),
+    approved:false
+  };
+  const r=await sb('food_places',{insert:data});
+  if(r&&r[0]){closeModal('foodModal');showToast('🍲 Food spot submitted! We\'ll review it shortly.');}
+  else showToast('Submission failed. Please try again.');
+}
+
 loadAllData().then(() => { handleRoute(getRoute()); initPushPrompt(); });
 
 
@@ -5450,6 +5613,7 @@ loadAllData().then(() => { handleRoute(getRoute()); initPushPrompt(); });
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       Bars
     </button>
+    <button class="mob-tab" id="mobtab-food" onclick="navigate('/food')"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg><span>Food</span></button>
     <button class="mob-tab" id="mobtab-bands" onclick="navigate('/bands')">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
       Bands
@@ -5530,184 +5694,8 @@ loadAllData().then(() => { handleRoute(getRoute()); initPushPrompt(); });
   <div>&copy; 2024&ndash;2026 AccraNightOut &middot; Accra, Ghana &middot; All rights reserved</div>
 </footer>
 
-      <div class="chat-header-info">
-        <div class="chat-header-name">AccraNightOut</div>
-        <div class="chat-header-status">● Online · Replies instantly</div>
-      </div>
-      <div class="chat-close" onclick="toggleChat()">✕</div>
-    </div>
-    <div class="chat-messages" id="chatMessages"></div>
-    <div class="chat-options" id="chatOptions"></div>
-    <div class="chat-input-row">
-      <input class="chat-input" id="chatInput" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendChatMsg()"/>
-      <button class="chat-send" onclick="sendChatMsg()">➤</button>
-    </div>
-    <a class="chat-wa-btn" id="chatWaBtn" href="https://wa.me/233200600600" target="_blank">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-      Chat on WhatsApp
-    </a>
-  </div>
-  <div class="chat-bubble" id="chatBubble" onclick="toggleChat()">
-    <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
-    <div class="chat-unread" id="chatUnread">1</div>
-  </div>
-</div>
+<!-- Food Registration Modal -->
 
-<!-- CHAT WIDGET -->
-<div id="ano-chat-root" style="all:initial;position:fixed;bottom:24px;right:20px;z-index:2147483647;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:block;">
-<style>
-#ano-chat-root * { box-sizing: border-box; margin: 0; padding: 0; }
-#ano-panel {
-  display: none; flex-direction: column;
-  position: fixed; bottom: 90px; right: 20px;
-  width: 320px; background: #1A1A1A;
-  border: 1px solid #333; border-radius: 16px;
-  box-shadow: 0 12px 40px rgba(0,0,0,.7);
-  overflow: hidden; z-index: 2147483646;
-}
-#ano-panel.ano-open { display: flex; }
-#ano-header {
-  background: linear-gradient(135deg,#D4A017,#C8960F);
-  padding: 12px 14px; display: flex; align-items: center; gap: 10px;
-}
-#ano-header-icon { width:36px;height:36px;background:rgba(0,0,0,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0; }
-#ano-header-info { flex:1; }
-#ano-header-name { font-weight:700;font-size:14px;color:#000; }
-#ano-header-status { font-size:11px;color:rgba(0,0,0,.6); }
-#ano-close { cursor:pointer;color:rgba(0,0,0,.5);font-size:18px;line-height:1;background:none;border:none;padding:4px; }
-#ano-close:hover { color:#000; }
-#ano-msgs { padding:12px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;max-height:260px;min-height:120px; }
-.ano-msg { max-width:86%;padding:8px 12px;border-radius:12px;font-size:13px;line-height:1.5;word-break:break-word; }
-.ano-bot { background:#2A2A2A;color:#F0EDE6;border-radius:12px 12px 12px 2px;align-self:flex-start; }
-.ano-user { background:#D4A017;color:#000;font-weight:600;border-radius:12px 12px 2px 12px;align-self:flex-end; }
-.ano-typing { background:#2A2A2A;color:#888;font-style:italic;border-radius:12px 12px 12px 2px;align-self:flex-start; }
-#ano-opts { padding:0 12px 8px;display:flex;flex-direction:column;gap:6px; }
-.ano-opt { padding:8px 12px;background:rgba(212,160,23,.1);border:1px solid rgba(212,160,23,.25);border-radius:8px;color:#D4A017;font-size:12px;font-weight:600;cursor:pointer;text-align:left;width:100%; }
-.ano-opt:hover { background:rgba(212,160,23,.22); }
-#ano-wa { margin:0 12px 12px;padding:10px 14px;background:#25D366;color:#fff;font-weight:700;font-size:13px;border-radius:10px;display:flex;align-items:center;gap:8px;cursor:pointer;justify-content:center;text-decoration:none;border:none;width:calc(100% - 24px); }
-#ano-wa:hover { background:#1ebe5d; }
-#ano-input-row { display:flex;gap:8px;padding:0 12px 12px; }
-#ano-input { flex:1;background:#111;border:1px solid #333;border-radius:8px;color:#F0EDE6;font-size:13px;padding:8px 10px;outline:none;font-family:inherit; }
-#ano-input:focus { border-color:rgba(212,160,23,.5); }
-#ano-send { background:#D4A017;color:#000;border:none;border-radius:8px;width:36px;height:36px;cursor:pointer;font-size:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center; }
-#ano-bubble { width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#D4A017,#F0C040);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 20px rgba(212,160,23,.5);position:relative;border:none; }
-#ano-bubble:hover { transform:scale(1.08); }
-#ano-badge { position:absolute;top:-3px;right:-3px;background:#E74C3C;color:#fff;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;display:none;align-items:center;justify-content:center;border:2px solid #0D0D0D; }
-</style>
-
-<div id="ano-panel">
-  <div id="ano-header">
-    <div id="ano-header-icon">🎵</div>
-    <div id="ano-header-info">
-      <div id="ano-header-name">AccraNightOut</div>
-      <div id="ano-header-status">● Online · Replies instantly</div>
-    </div>
-    <button id="ano-close" onclick="anoChatToggle()">✕</button>
-  </div>
-  <div id="ano-msgs"></div>
-  <div id="ano-opts"></div>
-  <div id="ano-input-row">
-    <input id="ano-input" placeholder="Type a message…" onkeydown="if(event.key==='Enter')anoSend()"/>
-    <button id="ano-send" onclick="anoSend()">➤</button>
-  </div>
-  <a id="ano-wa" href="https://wa.me/233200600600" target="_blank">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-    Chat on WhatsApp
-  </a>
-</div>
-
-<button id="ano-bubble" onclick="anoChatToggle()">
-  <svg width="26" height="26" viewBox="0 0 24 24" fill="#000"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
-  <div id="ano-badge">1</div>
-</button>
-
-<script>
-(function(){
-  var open=false, started=false;
-  var FAQS=[
-    {q:"What is AccraNightOut?",a:"AccraNightOut is Accra's live music discovery platform 🎵 We list upcoming gigs, partner bars, and registered bands so you always know where the music is tonight!"},
-    {q:"How do I post a gig?",a:"Click the 'Post a Gig' button on the homepage. Fill in your band, venue, date, time, and ticket price. Your gig will go live after a quick review!"},
-    {q:"How do I list my bar?",a:"Go to the Bars tab and scroll to the bottom — click 'List Your Bar'. Fill in your venue details and we'll add you to the map and directory."},
-    {q:"How do I register my band?",a:"Go to the Bands tab and click 'Register Your Band'. Add your name, genre, members, and social links to get discovered by fans and bars."},
-    {q:"How do I reserve a table?",a:"Find your bar on the Bars tab and click 'Reserve a Table'. Choose your date, time, and number of guests — it's free!"},
-    {q:"Is AccraNightOut free?",a:"Yes! Browsing, listing your bar or band is completely free. Some events may have ticket fees set by the organiser."},
-    {q:"Talk to a human",a:"No problem! Click the WhatsApp button below and we'll get back to you as soon as possible 👇"}
-  ];
-
-  window.anoChatToggle=function(){
-    open=!open;
-    document.getElementById('ano-panel').classList.toggle('ano-open',open);
-    document.getElementById('ano-badge').style.display='none';
-    if(open&&!started){started=true;anoStart();}
-  };
-
-  function anoStart(){
-    setTimeout(function(){
-      anoMsg('bot','👋 Hi! Welcome to AccraNightOut. How can I help you today?');
-      setTimeout(anoShowOpts,600);
-    },300);
-  }
-
-  function anoShowOpts(){
-    var el=document.getElementById('ano-opts');
-    el.innerHTML='';
-    FAQS.forEach(function(f,i){
-      var b=document.createElement('button');
-      b.className='ano-opt';b.textContent=f.q;
-      b.onclick=function(){anoFaq(i);};
-      el.appendChild(b);
-    });
-  }
-
-  window.anoFaq=function(i){
-    anoMsg('user',FAQS[i].q);
-    document.getElementById('ano-opts').innerHTML='';
-    setTimeout(function(){
-      anoMsg('typing','...');
-      setTimeout(function(){
-        anoRmTyping();anoMsg('bot',FAQS[i].a);
-        setTimeout(function(){anoMsg('bot','Anything else I can help with?');setTimeout(anoShowOpts,400);},800);
-      },900);
-    },200);
-  };
-
-  window.anoSend=function(){
-    var inp=document.getElementById('ano-input');
-    var msg=inp.value.trim();if(!msg)return;
-    inp.value='';anoMsg('user',msg);
-    document.getElementById('ano-opts').innerHTML='';
-    var l=msg.toLowerCase(),m=null;
-    if(/gig|post|event/.test(l))m=1;
-    else if(/bar|venue|list/.test(l))m=2;
-    else if(/band|artist|register/.test(l))m=3;
-    else if(/reserv|table|book/.test(l))m=4;
-    else if(/free|cost|price|pay/.test(l))m=5;
-    else if(/human|person|help|contact|speak/.test(l))m=6;
-    else if(/what|accra|about/.test(l))m=0;
-    setTimeout(function(){
-      anoMsg('typing','...');
-      setTimeout(function(){
-        anoRmTyping();
-        anoMsg('bot',m!==null?FAQS[m].a:"I'm not sure about that 🤔 Try one of the quick options below, or chat on WhatsApp for a personal response!");
-        setTimeout(anoShowOpts,600);
-      },900);
-    },300);
-  };
-
-  function anoMsg(type,text){
-    var el=document.getElementById('ano-msgs');
-    var d=document.createElement('div');
-    d.className='ano-msg ano-'+type;d.textContent=text;
-    el.appendChild(d);el.scrollTop=el.scrollHeight;
-  }
-  function anoRmTyping(){var t=document.getElementById('ano-msgs').querySelector('.ano-typing');if(t)t.remove();}
-
-  setTimeout(function(){
-    if(!open){var b=document.getElementById('ano-badge');b.style.display='flex';}
-  },5000);
-})();
-</script>
-</div>
 
 </body>
 </html>
