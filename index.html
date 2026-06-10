@@ -5486,34 +5486,36 @@ async function fetchFoodPlaces() {
 function renderFood(list) {
   const grid = document.getElementById('food-grid');
   if (!grid) return;
-  if (!list.length) { grid.innerHTML = '<div class="empty"><div class="empty-icon">🍲</div><p>No food spots found. Be the first to list yours!</p></div>'; return; }
-  grid.innerHTML = list.map(f => `
-    <div class="bar-card" onclick="navigate('/food/${slugify(f.name)}')" style="cursor:pointer;">
-      <div class="bar-top">
-        <div class="bar-avatar" style="background:linear-gradient(135deg,#c0392b,#e74c3c);">${initials(f.name)}</div>
-        <div>
-          <div class="bar-name">${f.name}</div>
-          <div class="bar-area">${f.area}, Accra</div>
-        </div>
-      </div>
-      <div class="bar-details">
-        ${f.address ? `<div class="bar-detail"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${f.address}</div>` : ''}
-        ${f.phone ? `<div class="bar-detail"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.6 1.21h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 6.18 6.18l.96-.96a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 21.92 16.92z"/></svg><a href="tel:${f.phone}">${f.phone}</a></div>` : ''}
-        ${f.hours ? `<div class="bar-detail">🕐 ${f.hours}</div>` : ''}
-        ${f.dishes ? `<div class="bar-detail">🍽️ ${f.dishes}</div>` : ''}
-        ${f.price_range ? `<div class="bar-detail">💰 ${f.price_range==='budget'?'Budget (under GHS 30)':f.price_range==='mid'?'Mid-range (GHS 30–80)':'Premium (GHS 80+)'}</div>` : ''}
-      </div>
-      <div class="bar-actions">
-        <a class="btn-map" href="${mapUrl(f.lat,f.lng,f.name)}" target="_blank">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
-          Get Directions
-        </a>
-        <button class="btn-map" onclick="event.stopPropagation();focusFoodOnMap(${f.id})" style="background:rgba(231,76,60,.12);border-color:rgba(231,76,60,.25);color:#e74c3c;">
-          📍 Show on Map
-        </button>
-      </div>
-    </div>`).join('');
-  document.getElementById('food-count').textContent = `${list.length} spot${list.length!==1?'s':''}`;
+  if (!list.length) {
+    grid.innerHTML = '<div class="empty"><div class="empty-icon">🍲</div><p>No food spots found. Be the first to list yours!</p></div>';
+    return;
+  }
+  grid.innerHTML = list.map(f => {
+    const priceLabel = f.price_range === 'budget' ? 'Budget (under GHS 30)' : f.price_range === 'mid' ? 'Mid-range (GHS 30–80)' : f.price_range === 'premium' ? 'Premium (GHS 80+)' : '';
+    return '<div class="bar-card food-card" data-slug="' + slugify(f.name) + '" data-id="' + f.id + '" style="cursor:pointer;">' +
+      '<div class="bar-top">' +
+        '<div class="bar-avatar" style="background:linear-gradient(135deg,#c0392b,#e74c3c);">' + initials(f.name) + '</div>' +
+        '<div><div class="bar-name">' + f.name + '</div><div class="bar-area">' + f.area + ', Accra</div></div>' +
+      '</div>' +
+      '<div class="bar-details">' +
+        (f.address ? '<div class="bar-detail">📍 ' + f.address + '</div>' : '') +
+        (f.phone ? '<div class="bar-detail">📞 <a href="tel:' + f.phone + '">' + f.phone + '</a></div>' : '') +
+        (f.hours ? '<div class="bar-detail">🕐 ' + f.hours + '</div>' : '') +
+        (f.dishes ? '<div class="bar-detail">🍽️ ' + f.dishes + '</div>' : '') +
+        (priceLabel ? '<div class="bar-detail">💰 ' + priceLabel + '</div>' : '') +
+      '</div>' +
+      '<div class="bar-actions">' +
+        (f.lat && f.lng ? '<a class="btn-map" href="' + mapUrl(f.lat, f.lng, f.name) + '" target="_blank" onclick="event.stopPropagation()">📍 Get Directions</a>' : '') +
+        '<button class="btn-map" onclick="event.stopPropagation();focusFoodOnMap(' + f.id + ')" style="background:rgba(231,76,60,.12);border-color:rgba(231,76,60,.25);color:#e74c3c;">🗺️ Show on Map</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  // Add click handlers
+  grid.querySelectorAll('.food-card').forEach(card => {
+    card.addEventListener('click', function() { navigate('/food/' + this.dataset.slug); });
+  });
+  const countEl = document.getElementById('food-count');
+  if (countEl) countEl.textContent = list.length + ' spot' + (list.length !== 1 ? 's' : '');
 }
 
 async function initFoodMap() {
