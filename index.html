@@ -707,7 +707,6 @@
   }
   #barMap { height: 380px; width: 100%; background: #1a1a2e; }
   #foodMap { height: 380px; width: 100%; background: #1a1a2e; }
-  #tab-food .map-section { display: none; }
   @media (max-width: 768px) { #foodMap { height: 260px; } }
 
   .map-popup { min-width: 200px; }
@@ -4372,7 +4371,7 @@ function showTab(tab) {
   if (!tabEl) return;
   tabEl.classList.add('active');
   document.querySelectorAll('.nav-tab').forEach((el,i) => {
-    el.classList.toggle('active', ['gigs','bars','bands','events','editorial','patrons'][i]===tab);
+    el.classList.toggle('active', ['gigs','bars','food','bands','events','editorial','patrons'][i]===tab);
   });
   document.querySelectorAll('.mob-tab').forEach(el => el.classList.remove('active'));
   const mobTab = document.getElementById('mobtab-'+tab);
