@@ -707,6 +707,7 @@
   }
   #barMap { height: 380px; width: 100%; background: #1a1a2e; }
   #foodMap { height: 380px; width: 100%; background: #1a1a2e; }
+  #tab-food .map-section { display: none; }
   @media (max-width: 768px) { #foodMap { height: 260px; } }
 
   .map-popup { min-width: 200px; }
@@ -4087,6 +4088,8 @@ function renderBars(list) {
     </div>`;
   }).join('');
   document.getElementById('bar-count').textContent = `${list.length} venue${list.length!==1?'s':''}`;
+  const barMapSection = document.querySelector('#tab-bars .map-section');
+  if (barMapSection) barMapSection.style.display = list.filter(b=>b.lat&&b.lng).length ? 'block' : 'none';
 }
 
 // ── RATING DATA ──
@@ -5516,6 +5519,9 @@ function renderFood(list) {
   });
   const countEl = document.getElementById('food-count');
   if (countEl) countEl.textContent = list.length + ' spot' + (list.length !== 1 ? 's' : '');
+  // Hide map if no places with coordinates
+  const mapSection = document.querySelector('#tab-food .map-section');
+  if (mapSection) mapSection.style.display = list.filter(f=>f.lat&&f.lng).length ? 'block' : 'none';
 }
 
 async function initFoodMap() {
@@ -5758,7 +5764,7 @@ loadAllData().then(() => { handleRoute(getRoute()); initPushPrompt(); });
 </div>
 
 <!-- CHAT WIDGET -->
-<div id="ano-chat-root" style="all:initial;position:fixed;bottom:24px;right:20px;z-index:2147483647;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:block;">
+<div id="ano-chat-root" style="position:fixed;bottom:24px;right:20px;z-index:2147483647;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:block;width:56px;height:56px;">
 <style>
 #ano-chat-root * { box-sizing: border-box; margin: 0; padding: 0; }
 #ano-panel {
