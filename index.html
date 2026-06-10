@@ -5557,7 +5557,7 @@ function showFoodPage(f) {
       ${f.phone?`<div class="detail-row"><strong>📞 Phone</strong><a href="tel:${f.phone}">${f.phone}</a></div>`:''}
       ${f.dishes?`<div class="detail-row"><strong>🍽️ Dishes</strong><span>${f.dishes}</span></div>`:''}
       ${f.price_range?`<div class="detail-row"><strong>💰 Price Range</strong><span>${f.price_range==='budget'?'Budget (under GHS 30)':f.price_range==='mid'?'Mid-range (GHS 30–80)':'Premium (GHS 80+)'}</span></div>`:''}
-      ${f.desc?`<div class="detail-row"><strong>About</strong><span>${f.desc}</span></div>`:''}
+      ${f.description?`<div class="detail-row"><strong>About</strong><span>${f.description}</span></div>`:''}
       <div style="margin-top:1.5rem;display:flex;gap:.75rem;flex-wrap:wrap;">
         ${f.lat&&f.lng?`<a class="btn-map" href="${mapUrl(f.lat,f.lng,f.name)}" target="_blank" style="text-decoration:none;"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg> Get Directions</a>`:''}
         ${f.phone?`<a class="btn-map" href="tel:${f.phone}" style="text-decoration:none;">📞 Call Now</a>`:''}
@@ -5580,7 +5580,7 @@ async function submitFoodSpot() {
     hours:document.getElementById('fn-hours').value.trim(),
     dishes:document.getElementById('fn-dishes').value.trim(),
     price_range:document.getElementById('fn-price').value,
-    desc:document.getElementById('fn-desc').value.trim(),
+    description:document.getElementById('fn-desc').value.trim(),
     approved:false
   };
   const r=await sbFetch('food_places',{insert:data});
