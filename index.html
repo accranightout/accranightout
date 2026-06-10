@@ -2414,13 +2414,13 @@
       <img src="logo.png" alt="AccraNightOut" style="height:100%;width:auto;aspect-ratio:1;object-fit:cover;display:block;" />
     </div>
     <div class="nav-tabs">
-      <button class="nav-tab active" onclick="navigate('/')">Gigs</button>
-      <button class="nav-tab" onclick="navigate('/bars')">Bars</button>
-      <button class="nav-tab" onclick="navigate('/food')">Food</button>
-      <button class="nav-tab" onclick="navigate('/bands')">Bands</button>
-      <button class="nav-tab" onclick="navigate('/events')">Events</button>
-      <button class="nav-tab" onclick="navigate('/editorial')">Editorial</button>
-      <button class="nav-tab" onclick="showTab('patrons')">Patrons</button>
+      <button class="nav-tab active" data-tab="gigs" onclick="navigate('/')">Gigs</button>
+      <button class="nav-tab" data-tab="bars" onclick="navigate('/bars')">Bars</button>
+      <button class="nav-tab" data-tab="food" onclick="navigate('/food')">Food</button>
+      <button class="nav-tab" data-tab="bands" onclick="navigate('/bands')">Bands</button>
+      <button class="nav-tab" data-tab="events" onclick="navigate('/events')">Events</button>
+      <button class="nav-tab" data-tab="editorial" onclick="navigate('/editorial')">Editorial</button>
+      <button class="nav-tab" data-tab="patrons" onclick="showTab('patrons')">Patrons</button>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
       <button class="btn-install-nav" id="installBtnNav" onclick="triggerInstall()">
@@ -4370,8 +4370,8 @@ function showTab(tab) {
   const tabEl = document.getElementById('tab-'+tab);
   if (!tabEl) return;
   tabEl.classList.add('active');
-  document.querySelectorAll('.nav-tab').forEach((el,i) => {
-    el.classList.toggle('active', ['gigs','bars','food','bands','events','editorial','patrons'][i]===tab);
+  document.querySelectorAll('.nav-tab').forEach(el => {
+    el.classList.toggle('active', el.dataset.tab === tab);
   });
   document.querySelectorAll('.mob-tab').forEach(el => el.classList.remove('active'));
   const mobTab = document.getElementById('mobtab-'+tab);
