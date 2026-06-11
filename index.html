@@ -28,6 +28,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <link rel="manifest" href="/manifest.json" />
 <link rel="icon" type="image/png" href="logo.png" />
+<link rel="canonical" href="https://accranightout.com" id="canonical-tag" />
 
 <script type="application/ld+json">
 {
@@ -2402,6 +2403,25 @@
     .review-criteria { grid-template-columns: 1fr; }
   }
 </style>
+
+<!-- SPA route hints for crawlers -->
+<meta name="fragment" content="!" />
+<script type="application/ld+json" id="breadcrumb-schema">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type":"ListItem","position":1,"name":"Gigs","item":"https://accranightout.com/"},
+    {"@type":"ListItem","position":2,"name":"Bars","item":"https://accranightout.com/bars"},
+    {"@type":"ListItem","position":3,"name":"Food","item":"https://accranightout.com/food"},
+    {"@type":"ListItem","position":4,"name":"Bands","item":"https://accranightout.com/bands"},
+    {"@type":"ListItem","position":5,"name":"Events","item":"https://accranightout.com/events"},
+    {"@type":"ListItem","position":6,"name":"Editorial","item":"https://accranightout.com/editorial"},
+    {"@type":"ListItem","position":7,"name":"Terms of Service","item":"https://accranightout.com/terms"},
+    {"@type":"ListItem","position":8,"name":"Privacy Policy","item":"https://accranightout.com/privacy"}
+  ]
+}
+</script>
 </head>
 <body>
 
@@ -2606,6 +2626,13 @@
   </div>
   <div id="event-filters" class="filter-row"></div>
   <div class="cards-grid" id="events-grid"></div>
+  <!-- Events Map -->
+  <div class="map-section" id="events-map-section" style="display:none;">
+    <div class="map-section-header">
+      <span>📍 Event Locations — Click a pin to navigate</span>
+    </div>
+    <div id="eventMap" style="height:380px;width:100%;background:#1a1a2e;"></div>
+  </div>
 </main>
 
 <!-- ── EDITORIAL TAB ── -->
@@ -3453,6 +3480,9 @@ function getRoute() {
 
 function navigate(path, pushState=true) {
   if (pushState) history.pushState({}, '', path);
+  // Update canonical tag dynamically
+  const canon = document.getElementById('canonical-tag');
+  if (canon) canon.href = 'https://accranightout.com' + (path === '/' ? '' : path);
   const route = getRoute();
   handleRoute(route);
 }
@@ -3863,6 +3893,7 @@ async function sb(table, opts={}) {
 // ── IN-MEMORY STATE ──
 let bands=[], bars=[], gigs=[];
 let barMap = null, barMarkers = [];
+let eventMap = null, eventMarkers = [];
 let activeGenre="";
 
 async function testSupabaseConnection() {
@@ -3917,7 +3948,7 @@ async function loadAllData(){
   const today = new Date().toISOString().split('T')[0];
   const activeGigs = gigs.filter(g => g.date >= today || (g.concurrent && (!g.endDate || g.endDate >= today)));
   renderGigs(activeGigs.sort((a,b)=>a.date.localeCompare(b.date)));
-  renderBars(bars);renderBands(bands);renderLeaderboard();plotBarMarkers();
+  renderBars(bars);renderBands(bands);renderLeaderboard();plotBarMarkers();initEventMap();
   buildHomeCarousel();buildFlashTicker();initVisitorCounter();
 initPushPrompt();
 }
@@ -4399,6 +4430,7 @@ function showTab(tab) {
     renderEditorial();
   } else if (tab==='events') {
     renderEvents();
+    initEventMap();
   } else if (tab==='bars') {
     doSearch();
     initBarMap().then(() => { if(barMap) setTimeout(() => barMap.invalidateSize(), 100); });
@@ -4445,6 +4477,41 @@ async function initBarMap() {
   }
   plotBarMarkers();
   setTimeout(() => barMap.invalidateSize(), 100);
+}
+
+async function initEventMap() {
+  if (!document.getElementById('eventMap')) return;
+  if (!window.L) {
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+  if (!eventMap) {
+    eventMap = L.map('eventMap', {zoomControl:true}).setView([5.56, -0.20], 12);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19
+    }).addTo(eventMap);
+  }
+  // Clear old markers
+  eventMarkers.forEach(m => m.remove());
+  eventMarkers = [];
+  const todayStr = new Date().toISOString().split('T')[0];
+  const visible = events.filter(e => e.date >= todayStr && e.lat && e.lng);
+  visible.forEach(ev => {
+    const color = ev.color || '#D4A017';
+    const icon = L.divIcon({className:'', html:`<div style="width:16px;height:16px;background:${color};border-radius:50%;border:2px solid #fff;"></div>`, iconSize:[16,16]});
+    const m = L.marker([ev.lat, ev.lng], {icon}).addTo(eventMap);
+    const price = ev.price === 0 ? 'Free Entry' : 'GHS ' + ev.price;
+    m.bindPopup(`<div class="map-popup"><div class="map-popup-name">${ev.title}</div><div class="map-popup-area">${ev.venue} · ${price}</div><a class="map-popup-nav" href="https://maps.google.com/?q=${ev.lat},${ev.lng}" target="_blank">Get Directions</a></div>`);
+    eventMarkers.push(m);
+  });
+  // Show/hide map section
+  const ms = document.getElementById('events-map-section');
+  if (ms) ms.style.display = visible.length ? 'block' : 'none';
+  setTimeout(() => eventMap.invalidateSize(), 100);
 }
 
 function openModal(id) {
